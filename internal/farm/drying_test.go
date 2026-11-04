@@ -75,8 +75,39 @@ func TestAMSVersionIdentificationDoesNotRefreshTelemetry(t *testing.T) {
 	if p.AMS[0].Model != "AMS" || p.AMS[0].DryingStatus(later, false) != "Unsupported (no active dryer)" || p.AMS[1].Model != "AMS HT" {
 		t.Fatal("existing inventory not updated", p.AMS)
 	}
+	report(t, s, `{"mc_percent":20}`, later)
+	report(t, s, `{"ams":{"ams":[{"id":0,"humidity_raw":20}]}}`, later)
 	report(t, s, `{"ams":{"ams":[{"id":1,"dry_time":0},{"id":2,"dry_time":60}]}}`, later)
 	if p.AMS[1].Model != "AMS Lite" || p.AMS[1].DryingStatus(later, true) != "Unsupported (no active dryer)" || p.AMS[2].Model != "AMS 2 Pro" {
 		t.Fatal("metadata before inventory lost", p.AMS)
+	}
+}
+
+func TestAMSDryingInventoryClearInvalidatesModels(t *testing.T) {
+	for _, initial := range []struct {
+		module string
+		id     int
+	}{
+		{"ams/0", 0}, {"ams_f1/0", 0}, {"n3f/0", 0}, {"n3s/128", 128},
+	} {
+		t.Run(initial.module, func(t *testing.T) {
+			s, p, now := setup(t, "h2d")
+			version := fmt.Sprintf(`{"info":{"command":"get_version","module":[{"name":%q}]}}`, initial.module)
+			if err := s.Report("TEST", []byte(version), now); err != nil {
+				t.Fatal(err)
+			}
+			// Original AMS units need not have ever reported dry_time. Model
+			// invalidation must not depend on a drying timestamp being cached.
+			report(t, s, `{"ams":{"ams":[]}}`, now.Add(time.Second))
+			if len(p.amsModels) != 0 || len(p.amsDryingReports) != 0 {
+				t.Fatal("cleared inventory retained unit associations")
+			}
+			later := now.Add(2 * time.Second)
+			report(t, s, fmt.Sprintf(`{"ams":{"ams":[{"id":%d,"dry_time":95,"dry_setting":{"dry_temperature":55,"dry_duration":4}}]}}`, initial.id), later)
+			a := p.AMS[0]
+			if a.Model != "" || a.DryingStatus(later, true) != "Drying · 95 min remaining" || a.DryingSettings() != "55°C target · 4 h duration" {
+				t.Fatalf("replacement inherited previous hardware: %+v", a)
+			}
+		})
 	}
 }

@@ -31,6 +31,12 @@ func dryingInteger(v any) *int {
 }
 
 func (p *Printer) observeAMSDrying(delta map[string]any, now time.Time) {
+	// An explicitly empty inventory ends cached hardware associations. IDs can
+	// be reused by replacement units; omitted inventory must retain metadata,
+	// including version replies received before the first status report.
+	if inventory, ok := object(delta[fieldAMS])[fieldAMS].([]any); ok && len(inventory) == 0 {
+		clear(p.amsModels)
+	}
 	if p.amsDryingReports == nil {
 		p.amsDryingReports = map[int]time.Time{}
 	}

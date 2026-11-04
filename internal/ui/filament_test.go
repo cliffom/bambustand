@@ -211,3 +211,39 @@ func TestFilamentDryingLiveUpdatesAndBounds(t *testing.T) {
 		}
 	}
 }
+
+func TestFilamentDryingAfterUnitReplacement(t *testing.T) {
+	for _, size := range [][2]int{{60, 18}, {120, 32}} {
+		m := demoModel()
+		m.width, m.height = size[0], size[1]
+		apply := func(payload string) {
+			t.Helper()
+			next, _ := m.Update(monitor.Event{Kind: monitor.EventReport, ID: "H", Payload: []byte(payload), At: m.now})
+			m = next.(Model)
+		}
+		apply(`{"print":{"gcode_state":"IDLE","ams":{"ams":[{"id":0,"tray":[{"id":0,"tray_type":"PLA"}]}]}},"info":{"command":"get_version","module":[{"name":"ams/0"}]}}`)
+		m = key(m, "m")
+		if !strings.Contains(filamentText(m), "Unsupported") {
+			t.Fatal("original AMS not identified")
+		}
+		apply(`{"print":{"ams":{"ams":[]}}}`)
+		apply(`{"print":{"ams":{"ams":[{"id":0,"dry_time":95,"dry_setting":{"dry_temperature":55,"dry_duration":4},"tray":[{"id":0,"tray_type":"PLA"}]}]}}}`)
+		text := strings.Join(strings.Fields(filamentText(m)), " ")
+		if !strings.Contains(text, "Drying · 95 min remaining") || !strings.Contains(text, "55°C target · 4 h duration") || strings.Contains(text, "Unsupported") {
+			t.Fatal(text)
+		}
+		if m.filament.unitKey != "ams:0" || m.filament.slotID != 0 {
+			t.Fatal("replacement selection not restored")
+		}
+		for _, line := range strings.Split(ansi.Strip(m.View()), "\n") {
+			if ansi.StringWidth(line) > size[0] {
+				t.Fatalf("replacement overflow at %v: %s", size, line)
+			}
+		}
+		t.Logf("%dx%d replacement view:\n%s", size[0], size[1], ansi.Strip(m.View()))
+		m = key(m, "esc")
+		if m.filament != nil {
+			t.Fatal("replacement browser did not close")
+		}
+	}
+}

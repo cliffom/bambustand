@@ -48,3 +48,28 @@ func TestDryingDisplayIsDetachedAndAllowlisted(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestDryingDisplayAfterUnitReplacement(t *testing.T) {
+	now := time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC)
+	s := farm.New(10)
+	s.Cloud(true, "", now)
+	s.Discover([]farm.Device{{ID: "TEST", Online: true}}, now)
+	for _, payload := range []string{
+		`{"print":{"ams":{"ams":[{"id":0}]}},"info":{"command":"get_version","module":[{"name":"ams/0"}]}}`,
+		`{"print":{"ams":{"ams":[]}}}`,
+		`{"print":{"ams":{"ams":[{"id":0,"dry_time":95,"dry_setting":{"dry_temperature":55,"dry_duration":4}}]}}}`,
+	} {
+		if err := s.Report("TEST", []byte(payload), now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	display := session.BuildDisplay(s, now, true)
+	a := display.Printers[0].AMS[0]
+	if a.ID != 0 || a.Model != "" || !a.DryingCurrent || a.Drying != "Drying · 95 min remaining" || a.DryingSettings != "55°C target · 4 h duration" {
+		t.Fatalf("replacement display: %+v", a)
+	}
+	encoded := string(webserver.EncodeDisplay(display))
+	if !strings.Contains(encoded, `"drying":"Drying · 95 min remaining"`) || strings.Contains(encoded, "Unsupported") {
+		t.Fatal(encoded)
+	}
+}
