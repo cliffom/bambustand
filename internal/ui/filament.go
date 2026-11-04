@@ -14,6 +14,7 @@ import (
 
 type (
 	filamentUnit struct {
+		ams                   farm.AMS
 		key, name             string
 		id                    int
 		humidity, temperature *int
@@ -39,7 +40,7 @@ func filamentUnits(p *farm.Printer) []filamentUnit {
 	for _, unit := range p.AMS {
 		slots := append([]farm.Slot(nil), unit.Slots...)
 		sort.Slice(slots, func(i, j int) bool { return slots[i].ID < slots[j].ID })
-		units = append(units, filamentUnit{key: fmt.Sprintf(amsUnitKeyFormat, unit.ID), name: farm.AMSLabel(unit.ID), id: unit.ID, humidity: unit.Humidity, temperature: unit.Temperature, slots: slots})
+		units = append(units, filamentUnit{ams: unit, key: fmt.Sprintf(amsUnitKeyFormat, unit.ID), name: farm.AMSLabel(unit.ID), id: unit.ID, humidity: unit.Humidity, temperature: unit.Temperature, slots: slots})
 	}
 	// Sort by numeric wire identity rather than display label (AMS 2 before AMS 10).
 	sort.Slice(units, func(i, j int) bool { return units[i].id < units[j].id })
@@ -234,6 +235,13 @@ func (m *Model) syncFilament() {
 					temperature = fmt.Sprintf("%d°C", *unit.temperature)
 				}
 				lines = append(lines, field("Humidity", humidity), field("Temperature", temperature))
+				if unit.ams.Model != "" {
+					lines = append(lines, field("Unit Model", unit.ams.Model))
+				}
+				lines = append(lines, field("Drying", unit.ams.DryingStatus(m.now, p.TelemetryCurrent(m.now, m.Farm.Connected))))
+				if settings := unit.ams.DryingSettings(); settings != "" {
+					lines = append(lines, field("Dry Settings", "Last reported · "+settings))
+				}
 			}
 			materialWidth := max(1, d.view.Width-filamentSlotWidth-filamentRemainingWidth-filamentNozzleWidth)
 			lines = append(lines, "", m.styles.secondary.Render(cell("  SLOT", filamentSlotWidth)+cell("MATERIAL", materialWidth)+cell("REMAINING", filamentRemainingWidth)+cell("NOZZLE", filamentNozzleWidth)))

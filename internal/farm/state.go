@@ -34,17 +34,22 @@ type (
 	}
 
 	AMS struct {
-		ID          int
-		Humidity    *int
-		Temperature *int
-		Slots       []Slot
+		Model                                            string
+		DryingMinutes, DryingTemperature, DryingDuration *int
+		DryingReported                                   time.Time
+		ID                                               int
+		Humidity                                         *int
+		Temperature                                      *int
+		Slots                                            []Slot
 	}
 
 	Fault struct{ Code, Text, Level string }
 
 	Printer struct {
 		Device
-		Firmware Firmware
+		Firmware         Firmware
+		amsModels        map[int]string
+		amsDryingReports map[int]time.Time
 		// Raw is the flexible merged snapshot for telemetry interpretation and
 		// allowlisted diagnostics; lifecycle decisions use normalized fields.
 		Raw                                     map[string]any

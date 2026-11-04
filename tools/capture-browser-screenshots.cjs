@@ -94,6 +94,8 @@ const {chromium} = require("playwright");
     assert.equal(await page.getByRole("tab", {selected: true}).textContent(), "Status");
     await shot(page, "browser-printer-details.png", page.locator("#detail"));
     await page.getByRole("tab", {name: "Filament", exact: true}).click();
+    assert.match(await page.locator("#detail-body").textContent(), /Drying · 95 min remaining/);
+    assert.match(await page.locator("#detail-body").textContent(), /Not drying · 0 min remaining/);
     await shot(page, "browser-filament.png", page.locator("#detail"));
     await page.getByRole("tab", {name: "Notices", exact: true}).click();
     assert.match(await page.locator("#detail-body").textContent(), /Filament has run out/);

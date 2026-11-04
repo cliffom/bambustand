@@ -12,6 +12,8 @@ Both hosts share session ownership and persisted notice/snooze decisions; canoni
 
 Displayed telemetry has user-reported H2D/X2D validation, and historical router-restart recovery was observed. These scoped results do not complete current-release account/persistence, firmware, notification or device validation; see the [evidence and outstanding work](development/validation.md#remaining-live-checks).
 
+Next release preparation adds read-only AMS 2 Pro / AMS HT drying status and reported remaining minutes in both interfaces ([#167](https://github.com/cliffom/bambustand/issues/167)); live cloud drying behavior remains unverified.
+
 ## Open-issue milestones
 
 Issue states and milestone assignments were checked on 2026-10-31. This backlog is grouped by outcome, without committed delivery dates or release versions. The design milestones track decisions only; implementation requires an adopted design and separately scoped work.

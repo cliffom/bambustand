@@ -73,11 +73,13 @@ type (
 		Remaining *int
 	}
 	DisplayAMS struct {
-		ID          int
-		Label       string
-		Humidity    *int
-		Temperature *int
-		Slots       []DisplaySlot
+		Model, Drying, DryingSettings string
+		DryingCurrent                 bool
+		ID                            int
+		Label                         string
+		Humidity                      *int
+		Temperature                   *int
+		Slots                         []DisplaySlot
 	}
 	DisplayCondition struct {
 		ID       string
@@ -145,7 +147,7 @@ func BuildDisplay(state *farm.State, now time.Time, demo bool, decisions ...Deci
 			out.Nozzles = append(out.Nozzles, DisplayNozzle{ID: n.ID, Active: n.Active, Temperature: temp(n.Temperature)})
 		}
 		for _, unit := range p.AMS {
-			out.AMS = append(out.AMS, DisplayAMS{ID: unit.ID, Label: farm.AMSLabel(unit.ID), Humidity: copyValue(unit.Humidity), Temperature: copyValue(unit.Temperature), Slots: slots(unit.Slots)})
+			out.AMS = append(out.AMS, DisplayAMS{DryingCurrent: unit.DryingCurrent(now, out.Fresh), Model: unit.Model, Drying: unit.DryingStatus(now, out.Fresh), DryingSettings: unit.DryingSettings(), ID: unit.ID, Label: farm.AMSLabel(unit.ID), Humidity: copyValue(unit.Humidity), Temperature: copyValue(unit.Temperature), Slots: slots(unit.Slots)})
 		}
 		for key, c := range state.Active {
 			owner, _, _ := strings.Cut(key, "/")

@@ -95,7 +95,13 @@ func (p *Printer) normalize() {
 		if id == nil {
 			continue
 		}
-		a := AMS{ID: *id, Humidity: bounded(m[fieldHumidityRaw], 0, MaxPercent), Temperature: bounded(m[fieldTemp], 0, maxAMSTemperature)}
+		a := AMS{
+			ID: *id, Model: p.amsModels[*id],
+			Humidity: bounded(m[fieldHumidityRaw], 0, MaxPercent), Temperature: bounded(m[fieldTemp], 0, maxAMSTemperature),
+			DryingMinutes: dryingInteger(m[fieldDryTime]), DryingReported: p.amsDryingReports[*id],
+			DryingTemperature: bounded(object(m[fieldDrySetting])[fieldDryTemperature], 1, maxDryingTemperature),
+			DryingDuration:    bounded(object(m[fieldDrySetting])[fieldDryDuration], 1, maxDryingDuration),
+		}
 		for _, item := range array(m[fieldTray]) {
 			v := object(item)
 			slot := decodeSlot(v)

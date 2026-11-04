@@ -19,7 +19,7 @@ func (m *Model) syncHelp() {
 		"F / S          Cycle printer filter / sort",
 		"0              Reset view to All printers / Name sorting",
 		"f              View selected printer's first active fault",
-		"m              Browse selected printer's AMS/filament",
+		"m              Browse AMS/filament and reported drying",
 		"n              Manage local notice decisions (restore/reset)",
 		"s              Printer alert preferences and snoozing",
 		",              Configure general settings, alerts, printers, web server",
@@ -37,6 +37,7 @@ func (m *Model) syncHelp() {
 		"Esc            Close help and focus printers",
 		"q / Ctrl+C     Quit from dashboard (close help first)",
 		"", "a marks reviewed. c hides locally; printer state is unchanged.",
+		"Drying minutes are reported, not counted down locally. Missing data stays unknown.",
 		"? or Esc closes help. Scroll to read all controls.",
 	}
 	m.help.SetContent(ansi.Wrap(strings.Join(lines, "\n"), m.help.Width, ""))

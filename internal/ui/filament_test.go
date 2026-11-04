@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
@@ -175,6 +176,38 @@ func TestFilamentEmptyAndTerminalBounds(t *testing.T) {
 			if m.filament.detailsOffset >= m.filament.view.Height && m.filament.view.YOffset == 0 {
 				t.Fatal("Enter did not navigate to slot details")
 			}
+		}
+	}
+}
+
+func TestFilamentDryingLiveUpdatesAndBounds(t *testing.T) {
+	for _, size := range [][2]int{{60, 18}, {104, 28}, {140, 40}} {
+		m := filamentModel()
+		m.width, m.height = size[0], size[1]
+		m.syncPanels()
+		p := m.current()
+		p.LastReport, p.State = m.now, farm.StateRunning
+		minutes := 95
+		p.AMS[2].Model, p.AMS[2].DryingMinutes, p.AMS[2].DryingReported = "AMS 2 Pro", &minutes, m.now
+		m = key(m, "m")
+		if !strings.Contains(strings.Join(strings.Fields(filamentText(m)), " "), "Drying · 95 min remaining") || strings.Contains(filamentText(m), "Last-known") {
+			t.Fatal(filamentText(m))
+		}
+		unit, slot := m.filament.unitKey, m.filament.slotID
+		m.now = m.now.Add(3 * time.Minute)
+		m.syncFilament()
+		if !strings.Contains(filamentText(m), "Last-known") || m.filament.unitKey != unit || m.filament.slotID != slot {
+			t.Fatal("freshness changed selection")
+		}
+		for _, line := range strings.Split(ansi.Strip(m.View()), "\n") {
+			if ansi.StringWidth(line) > size[0] {
+				t.Fatalf("overflow at %v: %s", size, line)
+			}
+		}
+		t.Logf("%dx%d last-known filament view:\n%s", size[0], size[1], ansi.Strip(m.View()))
+		m = key(m, "esc")
+		if m.filament != nil {
+			t.Fatal("close failed")
 		}
 	}
 }

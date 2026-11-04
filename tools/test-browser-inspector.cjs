@@ -22,6 +22,10 @@ const {chromium} = require("playwright");
           text: `Synthetic condition ${i}`, guidance: "Inspect the printer before using Bambu's applications.",
           level: "warning", hidden: false, since: new Date().toISOString()})),
         ams: Array.from({length: 6}, (_,i) => ({label: `AMS ${i + 1}`, humidity: 30, temperature: null,
+          drying_current: i < 2,
+          model: i === 0 ? "AMS 2 Pro" : i === 1 ? "AMS HT" : "AMS",
+          drying: i === 0 ? "Drying · 95 min remaining" : i === 1 ? "Not drying · 0 min remaining" : "Unsupported (no active dryer)",
+          drying_settings: i === 0 ? "55°C target · 4 h duration" : "",
           slots: [{id: 0, material: "PLA", present: true, color: "AABBCC", remaining: 0},
             {id: 1, material: "", present: false, color: "", remaining: null}]})),
         external: [{id: 0, material: "PETG", present: true, color: "112233", remaining: null}]};
@@ -79,6 +83,13 @@ const {chromium} = require("playwright");
           assert.match(await body.textContent(), /Empty \(reported\)/);
           assert.match(await body.textContent(), /Remaining: 0%/);
           assert.match(await body.textContent(), /External filament/);
+          assert.match(await body.textContent(), /Drying · 95 min remaining/);
+          assert.match(await body.textContent(), /Not drying · 0 min remaining/);
+          assert.match(await body.textContent(), /Unsupported \(no active dryer\)/);
+          printer.ams[0].drying_current = false;
+          printer.ams[0].drying = "Last-known · Drying · 95 min remaining";
+          await page.evaluate(() => poll());
+          assert.match(await body.textContent(), /Last-known · Drying · 95 min remaining/);
         }
       }
       assert.equal(writes, 0, "tab switching makes no decisions");

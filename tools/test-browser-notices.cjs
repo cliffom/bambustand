@@ -505,3 +505,26 @@ test("review opens Notices and printer removal preserves tab with safe action fo
   assert.equal(view.focused(), "close-detail");
   assert.equal(view.run('detailTab'), "notices");
 });
+
+test("Filament drying updates preserve focus/scroll and qualify feed loss", () => {
+  const view = inspector();
+  view.run(`snapshot.printers[0].ams = [
+    {label: "AMS 1", model: "AMS", humidity: 25, temperature: 28, slots: [], drying: "Unsupported (no active dryer)"},
+    {label: "AMS 2", model: "AMS 2 Pro", humidity: 15, temperature: 48, slots: [], drying_current: true, drying: "Drying · 95 min remaining", drying_settings: "55°C target · 4 h duration"},
+    {label: "AMS HT 1", model: "AMS HT", humidity: null, temperature: null, slots: [], drying: "Unknown"}
+  ]; inspect("printer", "filament");`);
+  assert.match(view.html(), /Unsupported \(no active dryer\)/);
+  assert.match(view.html(), /Drying · 95 min remaining/);
+  assert.match(view.html(), /Last reported drying settings: 55°C target · 4 h duration/);
+  assert.match(view.html(), /AMS HT · Drying: Unknown/);
+  view.focus("#detail-tab-filament");
+  view.run('$("#detail-body").scrollTop = 90; snapshot.printers[0].ams[1].drying = "Not drying · 0 min remaining"; renderDetail()');
+  assert.match(view.html(), /Not drying · 0 min remaining/);
+  assert.equal(view.focused(), "detail-tab-filament");
+  assert.equal(view.run('$("#detail-body").scrollTop'), 90);
+  view.run('feedError = true; renderDetail()');
+  assert.match(view.html(), /Last-known · Not drying · 0 min remaining/);
+  assert.doesNotMatch(view.html(), /Last-known · Unsupported/);
+  view.run('feedError = false; snapshot.printers[0].ams[1].drying_current = false; snapshot.printers[0].ams[1].drying = "Last-known · Drying · 95 min remaining"; renderDetail()');
+  assert.match(view.html(), /Last-known · Drying · 95 min remaining/);
+});
