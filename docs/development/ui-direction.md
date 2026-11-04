@@ -114,3 +114,7 @@ Existing automated guards make the interaction contracts verifiable:
 Keep these guards passing and extend them for new behavior rather than weakening assertions to fit a regression. Run `go test -race ./internal/ui ./cmd/bambustand` for the UI/terminal suites, or `make test` for all packages. Visual review and documentation impact remain required even when automated tests pass.
 
 In the PR, describe the operator-visible before/after behavior, identify the contracts affected, link updated user guidance, and report regression tests and visual inspection results. An intentional departure from these defaults should be backed by the user's requested behavior, reflected in the direction/user guides, and covered by the relevant checks in the same change. Routine fixes within this direction do not need a separate approval step.
+
+## AMS drying presentation
+
+Show per-unit reported drying status and minutes in the TUI AMS / Filament browser and browser inspector's Filament tab. Keep explicit zero, unknown, unsupported hardware, and last-known readings distinct. Derive status through the farm's shared interpretation and qualify browser feed failure locally. Drying observation age is independent of unrelated telemetry; do not count down locally or infer heater activity from temperature/settings. Show target temperature/configured hours separately as last reported settings. Preserve unit/slot identity, selection, focus and scroll through updates; retain existing close and minimum-size contracts.

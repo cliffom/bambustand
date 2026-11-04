@@ -485,8 +485,11 @@ func TestPTYNavigationResizeAndNormalQuit(t *testing.T) {
 	// dialog, including a raw Ctrl+C byte that must not become an OS signal.
 	mark = child.send(t, "q\x1b[C")
 	child.expect(t, mark, "Unit 2 / 4")
+	child.expect(t, mark, "Drying · 95 min remaining")
+	child.expect(t, mark, "55°C target · 4 h duration")
 	mark = child.send(t, "\x03\x1b[C")
 	child.expect(t, mark, "Unit 3 / 4")
+	child.expect(t, mark, "Not drying · 0 min remaining")
 	mark = child.send(t, "\x05") // Ctrl+E suspends the browser without closing it.
 	child.expect(t, mark, "STATUS / FEEDBACK")
 	mark = child.send(t, "q\x03\x05")

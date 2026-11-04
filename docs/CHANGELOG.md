@@ -2,6 +2,12 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.7.0 — AMS drying monitoring
+
+- Show reported AMS 2 Pro / AMS HT drying status and remaining minutes in the TUI filament browser and browser Filament tab (#167).
+- Distinguish explicit zero, unknown data, confirmed original AMS/AMS Lite without active drying, and last-known observations. Keep reported drying settings separate; no local countdown or drying controls.
+- Include synthetic drying demo data. Cloud reporting depends on printer/firmware; live drying validation remains outstanding.
+
 ## 0.6.0 — Canonical application namespace
 
 - Adopt `com.suitepotato.bambustand` for storage, credential services, browser preferences and CLI signing; use `.notify` for the macOS helper (#162).

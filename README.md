@@ -78,7 +78,7 @@ Application storage uses `com.suitepotato.bambustand`. See [identity and storage
 ./bambustand --demo
 ```
 
-Browse a simulated farm with AMS units and an external spool. Press `m` to inspect filament and `?` for help. A simulated runout demonstrates an action-needed alert about 15 seconds after launch. Close dialogs with `Esc`, then press `q` to quit.
+Browse a simulated farm with AMS units and an external spool. Press `m` to inspect filament, reported AMS 2 Pro / AMS HT drying status and remaining time, and `?` for help. A simulated runout demonstrates an action-needed alert about 15 seconds after launch. Close dialogs with `Esc`, then press `q` to quit.
 
 For terminal-free monitoring of your own farm, save a login and run `./bambustand serve`. For a terminal-free synthetic browser demo, run `./bambustand serve --demo` and open the printed localhost URL. Stop the foreground server with `Ctrl+C`. See [demo server options and limits](docs/user/usage.md#terminal-free-demo-server).
 

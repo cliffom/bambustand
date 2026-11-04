@@ -68,6 +68,7 @@ func (p *Printer) versionReport(info map[string]any, now time.Time) {
 	if result := str(info[fieldResult]); result != "" && !strings.EqualFold(result, versionSuccess) {
 		return
 	}
+	p.amsVersionReport(info)
 	for _, entry := range array(info[fieldModule]) {
 		module := object(entry)
 		if str(module[fieldName]) == otaModule {

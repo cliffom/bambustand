@@ -143,7 +143,7 @@ These captures show the current dashboard using synthetic demo data, with printi
 
 | Status tab | Filament tab |
 | --- | --- |
-| [![Status tab showing paused printer telemetry](../../assets/screenshots/browser-printer-details.png)](../../assets/screenshots/browser-printer-details.png) | [![Filament tab showing AMS slot materials, colors, estimates, and unknown values](../../assets/screenshots/browser-filament.png)](../../assets/screenshots/browser-filament.png) |
+| [![Status tab showing paused printer telemetry](../../assets/screenshots/browser-printer-details.png)](../../assets/screenshots/browser-printer-details.png) | [![Filament tab showing AMS drying status, remaining minutes, settings, slot materials, and estimates](../../assets/screenshots/browser-filament.png)](../../assets/screenshots/browser-filament.png) |
 
 [![Notices tab with synthetic runout guidance and Hide notice locally](../../assets/screenshots/browser-notices.png)](../../assets/screenshots/browser-notices.png)
 
@@ -367,9 +367,13 @@ The summary counts the whole farm. `F` cycles All, Attention, Printing, and Unav
 
 ### AMS and filament
 
+The TUI browser and the web inspector's **Filament** tab show per-unit drying status and remaining minutes when reported by AMS 2 Pro / AMS HT firmware. A positive value displays **Drying**; an explicit zero displays **Not drying · 0 min remaining**. Missing or invalid values stay **Unknown**. Minutes are the printer's report, without a local countdown or a claim that the heater is currently energized. A drying observation older than two minutes becomes **Last-known**, even while other printer telemetry is fresh; offline, stale, and disconnected readings are also qualified. Press `r` from the TUI dashboard to request a status refresh.
+
+Reported module metadata identifies the unit model; an original AMS or AMS Lite displays **Unsupported (no active dryer)**. A missing model does not establish unsupported hardware. Reported target temperature and configured duration appear separately as **Last reported drying settings**, where available; temperature, humidity, settings, and ordinary AMS feeding do not establish an active drying cycle. Firmware support varies, and live cloud drying reports remain unverified. See [protocol evidence and firmware limits](../reference/protocol-sources.md#ams-drying). Drying controls are outside the application's read-only scope.
+
 The dashboard keeps printer details compact: the filament summary shows inventory counts, low/unknown AMS estimates, and the active nozzle path. Press `m` for the full **AMS / Filament** browser. `Tab` / `Shift+Tab` or left/right switches standard AMS units, AMS HT units, and external spools; up/down or `j/k` selects a slot, `Home/End` selects the first/last slot, `Enter` brings its details into view, and `PgUp/PgDn` scrolls. `m` or `Esc` closes the browser and preserves dashboard focus/scroll. As with other modals, `q` and `Ctrl+C` do not quit until you close it.
 
-The browser stays on the same printer, unit, and slot as reports arrive, and falls back safely if an inventory item disappears. Live telemetry continues; action-needed alerts queue until the browser closes. A reported 0% remains distinct from an empty slot, missing estimates stay unknown, and external spool quantity remains unavailable. The compact low-estimate count reflects reported AMS quantities even if the corresponding notice was locally dismissed. Try `make demo` and press `m` to browse two standard AMS units, an AMS HT, and an external spool without logging in.
+The browser stays on the same printer, unit, and slot as reports arrive, and falls back safely if an inventory item disappears. When the printer explicitly clears its AMS inventory, cached unit models are also cleared; a replacement can show reported drying without inheriting the previous unit's unsupported status. Live telemetry continues; action-needed alerts queue until the browser closes. A reported 0% remains distinct from an empty slot, missing estimates stay unknown, and external spool quantity remains unavailable. The compact low-estimate count reflects reported AMS quantities even if the corresponding notice was locally dismissed. Try `make demo` and press `m` to browse an original AMS, an AMS 2 Pro drying with 95 reported minutes remaining, an AMS HT reporting zero remaining, and an external spool without logging in.
 
 ### Notices
 

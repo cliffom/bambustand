@@ -68,6 +68,9 @@ func Demo(ctx context.Context, out chan<- Event, refresh <-chan struct{}) {
 			if state == farm.StatePaused {
 				addDemoRunout(payload["print"].(map[string]any))
 			}
+			payload["info"] = map[string]any{"command": "get_version", "module": []any{
+				map[string]any{"name": "ams/0"}, map[string]any{"name": "n3f/1"}, map[string]any{"name": "n3s/128"},
+			}}
 			b, _ := json.Marshal(payload)
 			if !emit(ctx, out, Event{Kind: EventReport, ID: d.ID, Payload: b}) {
 				return
@@ -88,13 +91,13 @@ func addDemoAMS(report map[string]any) {
 	ams := report["ams"].(map[string]any)
 	units := ams["ams"].([]any)
 	ams["ams"] = append(units,
-		map[string]any{"id": "1", "temp": "27", "humidity_raw": "30", "tray": []any{
+		map[string]any{"id": "1", "dry_time": 95, "dry_setting": map[string]any{"dry_temperature": 55, "dry_duration": 4}, "temp": "47", "humidity_raw": "30", "tray": []any{
 			map[string]any{"id": "0", "state": 3, "tray_type": "PLA", "tray_color": "D6CCA3FF", "remain": 92},
 			map[string]any{"id": "1", "state": 0},
 			map[string]any{"id": "2", "state": 3, "tray_type": "PETG", "tray_color": "4477AAFF", "remain": -1},
 			map[string]any{"id": "3", "state": 3, "tray_type": "PLA", "tray_color": "FFFFFFFF", "remain": 13},
 		}},
-		map[string]any{"id": "128", "temp": "33", "humidity_raw": "11", "tray": []any{
+		map[string]any{"id": "128", "dry_time": 0, "temp": "33", "humidity_raw": "11", "tray": []any{
 			map[string]any{"id": "0", "state": 3, "tray_type": "PETG", "tray_color": "668C80FF", "remain": 64},
 		}},
 	)

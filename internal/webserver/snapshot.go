@@ -65,11 +65,15 @@ type (
 		Remaining *int   `json:"remaining"`
 	}
 	ams struct {
-		ID          int    `json:"id"`
-		Label       string `json:"label"`
-		Humidity    *int   `json:"humidity"`
-		Temperature *int   `json:"temperature"`
-		Slots       []slot `json:"slots"`
+		Model          string `json:"model"`
+		Drying         string `json:"drying"`
+		DryingCurrent  bool   `json:"drying_current"`
+		DryingSettings string `json:"drying_settings"`
+		ID             int    `json:"id"`
+		Label          string `json:"label"`
+		Humidity       *int   `json:"humidity"`
+		Temperature    *int   `json:"temperature"`
+		Slots          []slot `json:"slots"`
 	}
 	condition struct {
 		ID       string `json:"id"`
@@ -101,7 +105,7 @@ func EncodeDisplay(state session.DisplayState) []byte {
 			next.Nozzles = append(next.Nozzles, nozzle{ID: n.ID, Active: n.Active, Temperature: temperature(n.Temperature)})
 		}
 		for _, a := range p.AMS {
-			next.AMS = append(next.AMS, ams{ID: a.ID, Label: a.Label, Humidity: a.Humidity, Temperature: a.Temperature, Slots: displaySlots(a.Slots)})
+			next.AMS = append(next.AMS, ams{DryingCurrent: a.DryingCurrent, Model: a.Model, Drying: a.Drying, DryingSettings: a.DryingSettings, ID: a.ID, Label: a.Label, Humidity: a.Humidity, Temperature: a.Temperature, Slots: displaySlots(a.Slots)})
 		}
 		for _, c := range p.Conditions {
 			next.Conditions = append(next.Conditions, condition(c))
