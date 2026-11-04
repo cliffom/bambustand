@@ -151,6 +151,24 @@ const {chromium} = require("playwright");
       Object.assign(printer, {state:"RUNNING", eta_current:false});
       await page.evaluate(() => poll());
       assert.match(await page.locator(".job-facts").textContent(), /Last-known finish estimate/);
+      // Missing extruder.state yields two false flags; neither proves inactivity.
+      printer.nozzles = [
+        {id:0, active:false, temperature:{current:210, target:220}},
+        {id:1, active:false, temperature:{current:180, target:190}}
+      ];
+      await page.getByRole("tab", {name:"Overview", exact:true}).focus();
+      await body.evaluate(el => { el.scrollTop = 100; });
+      const nozzleScroll = await body.evaluate(el => el.scrollTop);
+      await page.evaluate(() => poll());
+      assert.equal(await page.locator(".nozzle-activity").count(), 0);
+      assert.doesNotMatch(await body.textContent(), /Reported inactive/);
+      assert.match(await page.locator(".temperature-grid").textContent(), /210.*180/s);
+      assert.equal(await body.evaluate(el => el.scrollTop), nozzleScroll);
+      assert.equal(await page.getByRole("tab", {name:"Overview", exact:true}).evaluate(el => el === document.activeElement), true);
+      printer.nozzles[1].active = true;
+      await page.evaluate(() => poll());
+      assert.equal(await page.locator(".nozzle-activity").textContent(), "Reported active");
+      assert.equal(await page.locator(".active-nozzle").count(), 1);
       Object.assign(printer, {fresh:false, connection:"Stale", progress:null, nozzles:[], bed:{}, chamber:{}});
       await page.evaluate(() => poll());
       assert.match(await body.textContent(), /Current state is unconfirmed/);

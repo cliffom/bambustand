@@ -565,6 +565,26 @@ test("Overview anchors finish to the independent remaining report, preserving ze
   assert.match(view.html(), /<strong>Unknown<\/strong><span>Last-known finish estimate/);
 });
 
+test("Overview does not infer nozzle inactivity when the active nozzle is unreported", () => {
+  const view = inspector();
+  // extruder.info without extruder.state normalizes to active:false for both nozzles.
+  view.run(`Object.assign(snapshot.printers[0], {online:true, nozzles:[
+    {id:0, active:false, temperature:{current:210, target:220}},
+    {id:1, active:false, temperature:{current:180, target:190}}
+  ]}); inspect("printer");`);
+  assert.match(view.html(), /Right nozzle/);
+  assert.match(view.html(), /Left nozzle/);
+  assert.match(view.html(), /210 <small>°C/);
+  assert.match(view.html(), /180 <small>°C/);
+  assert.doesNotMatch(view.html(), /nozzle-activity|active-nozzle|Reported inactive/);
+  view.run('snapshot.printers[0].nozzles[1].active = true; renderDetail()');
+  assert.equal((view.html().match(/Reported active/g) || []).length, 1);
+  assert.equal((view.html().match(/active-nozzle/g) || []).length, 1);
+  assert.doesNotMatch(view.html(), /Reported inactive/);
+  view.run('snapshot.printers[0].nozzles[1].active = false; renderDetail()');
+  assert.doesNotMatch(view.html(), /nozzle-activity|active-nozzle|Reported inactive/);
+});
+
 test("non-running states never present a running duration or finish and offline omits telemetry", () => {
   const view = inspector();
   view.run('Object.assign(snapshot.printers[0], {online:true, job:"Prior job", remaining:42, remaining_reported:new Date().toISOString(), eta_current:true})');
