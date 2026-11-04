@@ -31,7 +31,7 @@ function inspector() {
     elements.set(selector, value);
     return value;
   }
-  for (const id of ["detail", "detail-title", "detail-body", "close-detail",
+  for (const id of ["detail", "detail-title", "detail-model", "detail-artwork", "detail-body", "close-detail",
     "detail-tab-status", "detail-tab-filament", "detail-tab-notices",
     "search", "sort",
     "review", "about", "close-about", "settings", "settings-dialog", "close-settings"]) element("#" + id);
@@ -40,12 +40,16 @@ function inspector() {
     get: () => html,
     set(value) {
       html = value;
-      if (document.activeElement?.dataset.dismiss ||
-          document.activeElement?.id === "toggle-hidden-messages")
+      if (document.activeElement?.dataset.dismiss || document.activeElement?.dataset.slotKey ||
+          ["toggle-hidden-messages", "reading-summary", "slot-inspection"].includes(document.activeElement?.id))
         document.activeElement = null;
       for (const key of elements.keys())
-        if (key.startsWith("[data-dismiss=") || key === "#toggle-hidden-messages")
+        if (key.startsWith("[data-dismiss=") || key.startsWith("[data-slot-key=") || ["#toggle-hidden-messages", "#reading-summary", "#slot-inspection"].includes(key))
           elements.delete(key);
+      for (const id of ["reading-summary", "slot-inspection"])
+        if (value.includes(`id="${id}"`)) element("#" + id);
+      for (const match of value.matchAll(/data-slot-key="([^"]+)"/g))
+        element('[data-slot-key="' + match[1] + '"]', {slotKey: match[1]});
       if (value.includes('id="toggle-hidden-messages"')) element("#toggle-hidden-messages");
       for (const match of value.matchAll(/data-dismiss="([^"]+)"/g))
         element('[data-dismiss="' + match[1] + '"]', {dismiss: match[1]});
@@ -67,6 +71,11 @@ function inspector() {
     run, html: () => html,
     focus(selector) { elements.get(selector).focus(); },
     focused: () => document.activeElement?.id,
+    selectSlot(key) {
+      const target = elements.get(`[data-slot-key="${key}"]`);
+      target.focus();
+      listeners.click({target: {closest: selector => selector === "[data-slot-key]" ? target : null}});
+    },
     toggle() {
       const target = elements.get("#toggle-hidden-messages");
       listeners.click({target: {closest: (selector) =>
@@ -452,7 +461,8 @@ test("offline cards show identity and attention without last-known telemetry", (
   view.run('snapshot.printers[0].image = null; snapshot.printers[0].model = null');
   assert.match(view.run('card(snapshot.printers[0])'), /Unknown model.*<svg/s);
   view.run('selectDetailTab("status")');
-  assert.match(view.html(), /Old job/);
+  assert.doesNotMatch(view.html(), /Old job/);
+  assert.match(view.html(), /Reported offline/);
 });
 
 test("staleness and feed loss do not simplify online or unknown-connectivity cards", () => {
@@ -471,7 +481,7 @@ test("staleness and feed loss do not simplify online or unknown-connectivity car
   }
 });
 
-test("inspection defaults to Status and remembers independent panel positions during updates", () => {
+test("inspection defaults to Overview and remembers independent panel positions during updates", () => {
   const view = inspector();
   view.run('inspect("printer")');
   assert.equal(view.run('detailTab'), "status");
@@ -516,7 +526,7 @@ test("Filament drying updates preserve focus/scroll and qualify feed loss", () =
   assert.match(view.html(), /Unsupported \(no active dryer\)/);
   assert.match(view.html(), /Drying · 95 min remaining/);
   assert.match(view.html(), /Last reported drying settings: 55°C target · 4 h duration/);
-  assert.match(view.html(), /AMS HT · Drying: Unknown/);
+  assert.match(view.html(), /AMS HT<.*Drying: Unknown/s);
   view.focus("#detail-tab-filament");
   view.run('$("#detail-body").scrollTop = 90; snapshot.printers[0].ams[1].drying = "Not drying · 0 min remaining"; renderDetail()');
   assert.match(view.html(), /Not drying · 0 min remaining/);
@@ -527,4 +537,89 @@ test("Filament drying updates preserve focus/scroll and qualify feed loss", () =
   assert.doesNotMatch(view.html(), /Last-known · Unsupported/);
   view.run('feedError = false; snapshot.printers[0].ams[1].drying_current = false; snapshot.printers[0].ams[1].drying = "Last-known · Drying · 95 min remaining"; renderDetail()');
   assert.match(view.html(), /Last-known · Drying · 95 min remaining/);
+});
+
+test("Overview anchors finish to the independent remaining report, preserving zero and stale estimates", () => {
+  const view = inspector();
+  view.run(`Object.assign(snapshot.printers[0], {online:true, state:"RUNNING", progress:0,
+    remaining:42, remaining_reported:"2026-11-03T23:36:00Z", eta_current:true,
+    last_report:"2026-11-03T23:37:00Z", layer:0, total_layers:300,
+    nozzles:[{id:0, active:true, temperature:{current:0, target:0}}]}); inspect("printer");`);
+  const finish = view.run('overviewDetail(snapshot.printers[0])');
+  assert.match(finish, /Reported progress: 0 percent/);
+  assert.match(finish, /0 <small>°C/);
+  assert.match(finish, /Target 0 °C/);
+  assert.match(finish, /Reported remaining/);
+  assert.match(finish, /Estimated finish/);
+  view.run('snapshot.printers[0].last_report = "2026-11-03T23:38:00Z"');
+  // An unrelated telemetry update never moves the projected finish.
+  assert.equal(view.run('overviewDetail(snapshot.printers[0])').split('Estimated finish')[0], finish.split('Estimated finish')[0]);
+  view.run('snapshot.printers[0].eta_current = false; renderDetail()');
+  assert.match(view.html(), /Last-known remaining/);
+  assert.match(view.html(), /Last-known finish estimate/);
+  assert.doesNotMatch(view.html(), /Current state is unconfirmed/);
+  view.run('feedError = true; renderDetail()');
+  assert.match(view.html(), /Current state is unconfirmed/);
+  assert.match(view.html(), /Last-known progress: 0 percent/);
+  view.run('feedError = false; snapshot.printers[0].remaining_reported = ""; renderDetail()');
+  assert.match(view.html(), /<strong>Unknown<\/strong><span>Last-known finish estimate/);
+});
+
+test("non-running states never present a running duration or finish and offline omits telemetry", () => {
+  const view = inspector();
+  view.run('Object.assign(snapshot.printers[0], {online:true, job:"Prior job", remaining:42, remaining_reported:new Date().toISOString(), eta_current:true})');
+  for (const state of ["PAUSE", "FAILED", "IDLE", "FINISH", "UNKNOWN", "PREPARE", "SLICING"]) {
+    view.run(`snapshot.printers[0].state = "${state}"; inspect("printer")`);
+    assert.match(view.html(), /No running finish estimate/);
+    assert.match(view.html(), /No running time estimate/);
+    assert.doesNotMatch(view.html(), /<span>Estimated finish/);
+  }
+  view.run('snapshot.printers[0].online = false; renderDetail()');
+  assert.match(view.html(), /Reported offline/);
+  assert.doesNotMatch(view.html(), /Prior job|temperature-tile|progress-ring/);
+  view.run('snapshot.printers[0].online = true; snapshot.printers[0].progress = null; snapshot.printers[0].state = "UNKNOWN"; renderDetail()');
+  assert.match(view.html(), /Reported progress: Unknown/);
+  assert.doesNotMatch(view.html(), /Reported progress: 0 percent/);
+});
+
+test("filament selection uses family/unit/slot identities and survives reordering, updates, removal and return", () => {
+  const view = inspector();
+  view.run(`Object.assign(snapshot.printers[0], {online:true, ams:[
+    {id:0,label:"AMS 1",slots:[{id:0,present:true,material:"PLA",remaining:0,color:"AABBCC"}]},
+    {id:128,label:"AMS HT 1",slots:[{id:0,present:true,material:"PETG",remaining:null,color:"invalid;color:red"}]}],
+    external:[{id:0,present:null,material:"",remaining:80}]}); inspect("printer", "filament")`);
+  assert.equal(view.run('inventorySlots(snapshot.printers[0]).length'), 3);
+  assert.match(view.html(), /0% est\./);
+  assert.doesNotMatch(view.html(), /--filament:#invalid/);
+  view.selectSlot("ams:128:0");
+  assert.match(view.html(), /AMS HT 1 · Slot 0 · selected/);
+  assert.match(view.html(), /Remaining estimate<\/dt><dd>Unknown/);
+  view.run('$("#detail-body").scrollTop = 90; snapshot.printers[0].ams.reverse(); snapshot.printers[0].ams[0].slots[0].remaining = 12; renderDetail()');
+  assert.equal(view.run('selectedSlot'), "ams:128:0");
+  assert.equal(view.run('document.activeElement.dataset.slotKey'), "ams:128:0");
+  assert.equal(view.run('$("#detail-body").scrollTop'), 90);
+  assert.match(view.html(), /Remaining estimate<\/dt><dd>12% est\./);
+  view.run('snapshot.printers[0].ams.shift(); renderDetail()');
+  assert.match(view.html(), /Selected slot unavailable/);
+  assert.equal(view.focused(), "slot-inspection");
+  assert.equal(view.run('selectedSlot'), "ams:128:0");
+  view.run('selectDetailTab("notices"); selectDetailTab("filament")');
+  assert.match(view.html(), /Selected slot unavailable/);
+  view.selectSlot("external:0");
+  assert.match(view.html(), /Reported presence<\/dt><dd>Unknown/);
+  assert.match(view.html(), /Remaining estimate<\/dt><dd>Unavailable/);
+  assert.doesNotMatch(view.html(), /80%/);
+  view.run('snapshot.printers[0].online = false; renderDetail()');
+  assert.match(view.html(), /Inventory unavailable · reported offline/);
+  assert.doesNotMatch(view.html(), /data-slot-key=/);
+  view.run('inspect("printer", "filament")');
+  assert.equal(view.run('selectedSlot'), null);
+});
+
+test("empty presence wins over retained material and quantity without changing an explicit zero estimate", () => {
+  const view = inspector();
+  assert.equal(view.run('slotMaterial({present:false, material:"Prior material"})'), "Reported empty");
+  assert.equal(view.run('slotQuantity({present:false, remaining:20})'), "Not applicable");
+  assert.equal(view.run('slotQuantity({present:true, remaining:0})'), "0% est.");
+  assert.equal(view.run('slotQuantity({present:null, remaining:null})'), "Unknown");
 });
