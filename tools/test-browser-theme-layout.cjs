@@ -76,8 +76,9 @@ const {chromium} = require("playwright");
         }
         await page.locator(".card").first().click();
         assert.equal(await page.locator("#detail").evaluate(el => el.scrollWidth > el.clientWidth + 1), false);
-        for (const name of ["Status", "Filament", "Notices"]) {
+        for (const name of ["Overview", "Filament", "Notices"]) {
           await page.getByRole("tab", {name, exact: true}).click();
+          if (name === "Filament") await page.locator("[data-slot-key]").first().click();
           assert.ok(await page.evaluate(() => {
             const selected = getComputedStyle(document.querySelector('[role="tab"][aria-selected="true"]'));
             const filter = getComputedStyle(document.querySelector('.filters .selected'));
@@ -85,6 +86,30 @@ const {chromium} = require("playwright");
             return selected.backgroundColor === filter.backgroundColor && selected.color === filter.color &&
               dialog.scrollWidth <= dialog.clientWidth + 1 && panel.scrollWidth <= panel.clientWidth + 1;
           }), `${theme.id}: ${name} shares filter selection colors and fits`);
+          if (name !== "Notices") {
+            const contrast = await page.evaluate(() => {
+              const luminance = value => value.match(/[\d.]+/g).slice(0, 3).map(Number)
+                .map(v => (v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+                .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+              return [...document.querySelectorAll('.job-summary, .temperature-tile, .slot-card[aria-pressed="true"]')]
+                .map(el => {
+                  const css = getComputedStyle(el), x = luminance(css.color), y = luminance(css.backgroundColor);
+                  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+                });
+            });
+            assert.ok(contrast.length && contrast.every(ratio => ratio >= 4.5),
+              `${theme.id}: job/temperature/selected-slot text contrast ${contrast}`);
+            if (name === "Filament") {
+              const color = printers[0].ams[0].slots[0].color.replace(/^#/, "").slice(0, 6);
+              assert.equal(await page.locator('.slot-card .spool-art').first()
+                .evaluate(el => el.style.getPropertyValue('--filament')), `#${color}`,
+              "filament color remains independent of theme and selection");
+            }
+          }
+          if (process.env.SCREENSHOT_DIR) {
+            await page.locator("#detail").screenshot({path: path.join(process.env.SCREENSHOT_DIR,
+              `${theme.id}-${width}x${height}-${scale}x-${name}.png`)});
+          }
         }
         await page.keyboard.press("Escape");
         await page.evaluate(() => { document.querySelector(".shell").scrollTop = 0; scrollTo(0,0); });

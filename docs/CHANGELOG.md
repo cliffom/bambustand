@@ -2,6 +2,13 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.8.0 — Web printer inspection overhaul
+
+- Replace the browser Status panel with **Overview**: a grouped job summary, reported progress ring, independent remaining/finish estimates, and temperature tiles (#169).
+- Add selectable AMS/external spool racks and inline material inspection. Preserve slot identity through live updates and show unavailable inspection when a selected entry disappears; retain reported drying status/settings.
+- Keep detailed report/estimate timestamps under expandable Reading details. Explicitly offline inspectors omit job/temperature/inventory readings while retaining access to notices and reading metadata.
+- Preserve keyboard navigation, local notice decisions, per-tab reading positions, semantic themes, and unknown/last-known qualifications. No configuration migration or printer controls are introduced.
+
 ## 0.7.0 — AMS drying monitoring
 
 - Show reported AMS 2 Pro / AMS HT drying status and remaining minutes in the TUI filament browser and browser Filament tab (#167).

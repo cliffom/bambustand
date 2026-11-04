@@ -25,6 +25,7 @@ let commandPending = null, commandMessage = "";
 let showHiddenMessages = false;
 const detailTabs = ["status", "filament", "notices"];
 let detailTab = "status", detailScroll = {};
+let selectedSlot = null, readingExpanded = false, detailIdentity = "";
 let restoringCardFocus = false;
 let csrfToken = null;
 let snapshot = null,
@@ -237,9 +238,64 @@ function render() {
   $("#updated").textContent = localTime(snapshot.at);
   if (selected && $("#detail").open) renderDetail();
 }
-function slotCards(slots) {
-  if (!slots.length) return "<p>Slot inventory unknown.</p>";
-  return `<div class="spools">${slots.map((s) => `<div>${swatch(s.color)}<br>Slot ${unknown(s.id)}<small>${s.present === false ? "Empty (reported)" : s.present === null ? "Presence unknown" : escapeHTML(s.material || "Unknown material")}</small><small>Color: ${escapeHTML(s.color || "Unknown")}</small><small>Remaining: ${s.remaining === null ? "Unknown" : unknown(s.remaining) + "%"}</small></div>`).join("")}</div>`;
+// Slot identity includes inventory family and unit, never array position.
+function inventorySlots(p) {
+  return [...p.ams.flatMap(unit => unit.slots.map(slot => ({
+    key: `ams:${unit.id}:${slot.id}`, label: `${unit.label} · Slot ${slot.id}`, slot,
+  }))), ...p.external.map(slot => ({key: `external:${slot.id}`,
+    label: `External · Slot ${slot.id}`, slot}))];
+}
+function slotMaterial(s) {
+  return s.present === false ? "Reported empty" : s.material || "Unknown material";
+}
+function slotQuantity(s, external = false) {
+  return s.present === false ? "Not applicable" : external ? "Unavailable" :
+    s.remaining == null ? "Unknown" : `${s.remaining}% est.`;
+}
+function spool(s) {
+  const color = /^(?:#)?([a-f\d]{6})(?:[a-f\d]{2})?$/i.exec(s.color || "");
+  return `<span class="spool-art ${s.present === false ? "empty-spool" : ""}" aria-hidden="true"${color && s.present !== false ? ` style="--filament:#${color[1]}"` : ""}></span>`;
+}
+function slotCards(entries) {
+  if (!entries.length) return "<p>Slot inventory unknown.</p>";
+  return `<div class="spool-rack">${entries.map(({key, slot: s}) => `<button class="slot-card" data-slot-key="${escapeHTML(key)}" aria-pressed="${selectedSlot === key}" aria-controls="slot-inspection"><span class="slot-label">Slot ${unknown(s.id)}</span>${spool(s)}<strong>${escapeHTML(slotMaterial(s))}</strong><span>${s.present !== true && s.present !== false ? "Presence unknown · " : ""}${escapeHTML(slotQuantity(s, key.startsWith("external:")))}</span></button>`).join("")}</div>`;
+}
+function slotInspection(p) {
+  if (!selectedSlot) return '<p id="slot-inspection" class="inspection-hint" tabindex="0">Select a slot to inspect its reported material.</p>';
+  const entry = inventorySlots(p).find(entry => entry.key === selectedSlot);
+  if (!entry || p.online === false) return '<section id="slot-inspection" class="inventory-unit" tabindex="0"><h3>Selected slot unavailable</h3><p>This entry is no longer available for inspection. No other slot has been selected.</p></section>';
+  const s = entry.slot;
+  return `<section id="slot-inspection" class="slot-inspection" tabindex="0" aria-label="Selected filament slot"><div class="slot-heading">${spool(s)}<div><h3>${escapeHTML(slotMaterial(s))}</h3><span>${escapeHTML(entry.label)} · selected</span></div></div><dl class="inspection-values"><div><dt>Reported presence</dt><dd>${s.present === false ? "Reported empty" : s.present === true ? "Spool present" : "Unknown"}</dd></div><div><dt>Color</dt><dd>${s.present === false ? "Not applicable" : escapeHTML(s.color || "Unknown")}</dd></div><div><dt>Remaining estimate</dt><dd>${escapeHTML(slotQuantity(s, selectedSlot.startsWith("external:")))}</dd></div></dl><p class="inspection-hint">Reported quantities are approximate. Selecting a slot only changes this inspection view.</p></section>`;
+}
+function filamentDetail(p) {
+  if (p.online === false) return `<section class="unavailable-detail"><h2>Inventory unavailable · reported offline</h2><p>Missing readings do not establish that slots are empty.</p></section>${selectedSlot ? slotInspection(p) : ""}`;
+  const entries = inventorySlots(p);
+  const selectedEntry = entries.find(entry => entry.key === selectedSlot);
+  const inspection = slotInspection(p);
+  return `<div class="inspection-section-heading"><h2>AMS & filament</h2><span>Inventory · ${current(p) ? "last reported" : "last known"}</span></div>${!current(p) ? '<p class="inspection-warning">Current inventory is unconfirmed. Available readings are last-known; missing values remain unknown.</p>' : ""}${!selectedEntry ? inspection : ""}${p.ams.length ? p.ams.map(unit => `<section class="inventory-unit"><div class="inspection-section-heading"><h3>${escapeHTML(unit.label)}</h3><span>${escapeHTML(unit.model || "Unknown model")}</span></div><p class="unit-readings">Humidity: ${unit.humidity == null ? "Unknown" : unknown(unit.humidity) + "%"} · Temperature: ${unit.temperature == null ? "Unknown" : unknown(unit.temperature) + "°C"}</p>${dryingDetails(p, unit)}${slotCards(entries.filter(entry => entry.key.startsWith(`ams:${unit.id}:`)))}${selectedEntry?.key.startsWith(`ams:${unit.id}:`) ? inspection : ""}</section>`).join("") : "<p>AMS configuration unknown.</p>"}<section class="inventory-unit"><h3>External filament</h3>${slotCards(entries.filter(entry => entry.key.startsWith("external:")))}${selectedEntry?.key.startsWith("external:") ? inspection : ""}</section>`;
+}
+function detailTimestamp(value) {
+  return value && Number.isFinite(Date.parse(value))
+    ? new Date(value).toLocaleString(undefined, {dateStyle: "medium", timeStyle: "long"}) : "Unavailable";
+}
+function readingDetails(p) {
+  return `<details id="reading-details" class="reading-details"${readingExpanded ? " open" : ""}><summary id="reading-summary">Reading details <span>· report and estimate times</span></summary><dl class="inspection-values"><div><dt>Last telemetry report</dt><dd>${escapeHTML(detailTimestamp(p.last_report))}</dd></div><div><dt>Remaining-time report</dt><dd>${escapeHTML(detailTimestamp(p.remaining_reported))}</dd></div><div><dt>Last reported remaining</dt><dd>${escapeHTML(duration(p.remaining))}</dd></div><div><dt>Model</dt><dd>${escapeHTML(p.model || "Unknown model")}</dd></div><div><dt>Connection</dt><dd>${escapeHTML(status(p))}</dd></div></dl><p>Individual fields may be older than the latest report. Remaining time is a reported duration, not a local countdown, and may belong to a prior job. Estimates do not confirm completion; missing values stay unknown.</p></details>`;
+}
+function temperatureTile(label, value, activity = "") {
+  return `<div class="temperature-tile${activity === "Reported active" ? " active-nozzle" : ""}"><span>${escapeHTML(label)}</span><strong>${unknown(value?.current)}${value?.current == null ? "" : ' <small>°C</small>'}</strong><span>Target ${unknown(value?.target)}${value?.target == null ? "" : " °C"}</span>${activity ? `<span class="nozzle-activity">${escapeHTML(activity)}</span>` : ""}</div>`;
+}
+function overviewDetail(p) {
+  if (p.online === false) return `<section class="unavailable-detail"><h2>Reported offline</h2><p>Current readings are unavailable. Reported conditions remain accessible in Notices; being offline does not confirm resolution.</p></section>${readingDetails(p)}`;
+  const progress = Number.isFinite(p.progress) ? Math.max(0, Math.min(100, p.progress)) : null;
+  const running = p.state === "RUNNING";
+  const estimateCurrent = current(p) && p.eta_current;
+  // Match farm.ETA: anchor to the independent remaining report, never poll time.
+  const finish = running && p.remaining != null && Number.isFinite(Date.parse(p.remaining_reported))
+    ? new Date(Date.parse(p.remaining_reported) + p.remaining * 60000) : null;
+  const finishText = finish && Number.isFinite(finish.getTime()) ? finish.toLocaleString(undefined,
+    {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) : "Unknown";
+  const stopped = p.state === "PAUSE" || p.state === "FAILED";
+  return `${!current(p) ? '<p class="inspection-warning">Current state is unconfirmed. Available readings are last-known; missing values remain unknown.</p>' : ""}<section class="job-summary${stopped ? " stopped-job" : ""}${!current(p) ? " retained-job" : ""}" aria-label="Reported job summary"><div class="job-status"><strong>${escapeHTML(stateLabel(p.state))}${current(p) ? "" : " · last known"}</strong><span>${current(p) ? "Last reported" : escapeHTML(status(p))}</span></div><div class="job-heading"><div><span class="job-caption">Reported job</span><h2>${escapeHTML(p.job || (p.state === "IDLE" || p.state === "FINISH" ? "No reported job" : "Job unknown"))}</h2><p>Stage: ${escapeHTML(p.stage || "Unknown")}</p></div><div class="progress-ring" role="img" aria-label="${current(p) ? "Reported" : "Last-known"} progress: ${progress == null ? "Unknown" : progress + " percent"}"><svg viewBox="0 0 106 106" aria-hidden="true"><circle class="ring-track" cx="53" cy="53" r="47"/><circle class="ring-value" cx="53" cy="53" r="47" pathLength="100" stroke-dasharray="${progress || 0} 100"/></svg><strong>${progress == null ? "Unknown" : progress + "%"}</strong></div></div><div class="job-facts"><div><strong>${running ? escapeHTML(duration(p.remaining)) : "—"}</strong><span>${running ? estimateCurrent ? "Reported remaining" : "Last-known remaining" : "No running time estimate"}</span></div><div><strong>${running ? escapeHTML(finishText) : "—"}</strong><span>${running ? estimateCurrent ? "Estimated finish" : "Last-known finish estimate" : "No running finish estimate"}</span></div><div><strong>${unknown(p.layer)} / ${unknown(p.total_layers)}</strong><span>Reported layer</span></div></div></section><div class="inspection-section-heading"><h2>Temperatures</h2><span>${current(p) ? "Last reported" : "Last known"} · °C</span></div><div class="temperature-grid">${p.nozzles.length ? p.nozzles.map(n => temperatureTile(n.id === 0 ? "Right nozzle" : n.id === 1 ? "Left nozzle" : "Nozzle " + n.id, n.temperature, n.active ? "Reported active" : "")).join("") : temperatureTile("Nozzle", null)}${temperatureTile("Bed", p.bed)}${temperatureTile("Chamber", p.chamber)}</div>${readingDetails(p)}`;
 }
 // The session interprets drying and its independent observation age. Browser
 // feed failure additionally qualifies a previously current display snapshot.
@@ -256,11 +312,18 @@ function renderDetail() {
   const scroll = body.scrollTop;
   const focusedAction = document.activeElement?.dataset.dismiss;
   const focusedToggle = document.activeElement?.id === "toggle-hidden-messages";
+  const focusedSlot = document.activeElement?.dataset.slotKey;
+  const focusedReading = document.activeElement?.id === "reading-summary";
+  const focusedInspection = document.activeElement?.id === "slot-inspection";
   if (!p) {
     $("#detail-title").textContent = "Printer unavailable";
+    $("#detail-title").title = "Printer unavailable";
+    $("#detail-model").textContent = "";
+    $("#detail-artwork").innerHTML = "";
+    detailIdentity = "";
     body.innerHTML =
       "<p>This printer is no longer in the discovered farm. Its removal does not confirm fault resolution.</p>";
-    if (focusedAction || focusedToggle) $("#close-detail").focus({preventScroll: true});
+    if (focusedAction || focusedToggle || focusedSlot || focusedReading || focusedInspection) $("#close-detail").focus({preventScroll: true});
     body.scrollTop = scroll;
     return;
   }
@@ -268,11 +331,15 @@ function renderDetail() {
   const conditions = p.conditions.filter((c) => showHiddenMessages || !c.hidden);
   $("#detail-title").textContent = p.name;
   $("#detail-title").title = p.name;
-  const metric = (label, value) =>
-    `<div>${prefix(p)}${label}<strong>${value}</strong></div>`;
+  $("#detail-model").textContent = p.model || "Unknown model";
+  const identity = machine(p);
+  if (identity !== detailIdentity) {
+    $("#detail-artwork").innerHTML = identity;
+    detailIdentity = identity;
+  }
   const content = {
-    status: `<span class="pill ${current(p) ? "" : "warn"}">${escapeHTML(status(p))}</span><p>${escapeHTML(p.model || "Unknown model")} · Last report: ${escapeHTML(localTime(p.last_report))}<br>${current(p) ? "Readings from the latest monitoring snapshot." : "Current state is unconfirmed. Available readings are last-known; missing values remain unknown."}</p><h2>${escapeHTML(p.job || "No reported job")}</h2><p>${prefix(p)}Stage: ${escapeHTML(p.stage || "Unknown")}</p><div class="detail-grid">${metric("Reported state", escapeHTML(stateLabel(p.state)))}${metric("Progress", p.progress === null ? "Unknown" : unknown(p.progress) + "%")}${metric("Layer", unknown(p.layer) + " / " + unknown(p.total_layers))}${metric("Bed / target", temperature(p.bed))}${metric("Chamber", temperature(p.chamber))}${metric("Finish estimate", escapeHTML(remaining(p)))}</div><div class="temperature-list">${p.nozzles.map((n) => `<span>${prefix(p)}${n.id === 0 ? "Right nozzle" : n.id === 1 ? "Left nozzle" : "Nozzle " + unknown(n.id)}: ${temperature(n.temperature)}${n.active ? " · reported active" : ""}</span>`).join("") || "Nozzle readings unknown"}</div><p class="muted">Remaining-time report: ${escapeHTML(localTime(p.remaining_reported))}. Estimates do not confirm completion.</p>`,
-    filament: `<h2>${prefix(p)}AMS & filament</h2>${p.ams.length ? p.ams.map((unit) => `<p>${escapeHTML(unit.label)} · Humidity: ${unit.humidity === null ? "Unknown" : unknown(unit.humidity) + "%"} · Temperature: ${unit.temperature === null ? "Unknown" : unknown(unit.temperature) + "°C"}</p>${dryingDetails(p, unit)}${slotCards(unit.slots)}`).join("") : "<p>AMS configuration unknown.</p>"}<h2>${prefix(p)}External filament</h2>${slotCards(p.external)}`,
+    status: overviewDetail(p),
+    filament: filamentDetail(p),
     notices: `<div class="conditions"><h2>Reported conditions</h2><p role="status" aria-live="polite">${escapeHTML(commandMessage)}</p><p>Local decision storage: ${escapeHTML(snapshot.decisions || "Unknown")}. Hiding never fixes the printer.</p>${hiddenCount ? `<p><button id="toggle-hidden-messages" aria-pressed="${showHiddenMessages}">${showHiddenMessages ? "Hide hidden messages" : "View hidden messages"} (${hiddenCount})</button></p>` : ""}${conditions.length ? conditions.map((c) => `<div class="condition"><h3>${escapeHTML(c.text)}</h3>${c.guidance ? `<p><strong>Next:</strong> ${escapeHTML(c.guidance)}</p>` : ""}<p class="meta">${escapeHTML(c.level)} · Code: ${escapeHTML(c.code || "Not provided")}<br>Local review: ${c.reviewed ? "Reviewed" : "Unreviewed"}${c.hidden ? " · Hidden locally" : ""}<br>First app-observed: ${escapeHTML(localTime(c.since))}</p><p>Physical resolution is unconfirmed. Inspecting this view makes no local notice decision.</p>${!c.hidden ? `<button data-dismiss="${escapeHTML(c.id)}" aria-disabled="${Boolean(commandPending || feedUnavailable())}">${commandPending === c.id ? "Pending…" : "Hide notice locally"}</button>` : snapshot.decisions === "failed" ? `<button data-dismiss="${escapeHTML(c.id)}" data-retry="true" aria-disabled="${Boolean(commandPending || feedUnavailable())}">Retry saving local decisions</button>` : `<p>Applied locally · ${escapeHTML(snapshot.decisions || "storage unknown")}</p>`}</div>`).join("") : p.conditions.length ? "<p>All reported messages are hidden locally. Physical resolution remains unconfirmed.</p>" : "<p>No active notices in this snapshot. Missing or disconnected data does not confirm physical fault resolution.</p>"}</div>`,
   };
   body.innerHTML = content[detailTab];
@@ -285,6 +352,11 @@ function renderDetail() {
   if (focusedToggle) {
     ($("#toggle-hidden-messages") || $("#close-detail")).focus({preventScroll: true});
   }
+  if (focusedSlot) {
+    (document.querySelector(`[data-slot-key="${CSS.escape(focusedSlot)}"]`) || $("#slot-inspection") || $("#close-detail")).focus({preventScroll: true});
+  }
+  if (focusedReading) ($("#reading-summary") || $("#close-detail")).focus({preventScroll: true});
+  if (focusedInspection) ($("#slot-inspection") || $("#close-detail")).focus({preventScroll: true});
 }
 function selectDetailTab(tab, focus = false) {
   if (!detailTabs.includes(tab)) return;
@@ -304,6 +376,8 @@ function selectDetailTab(tab, focus = false) {
 function inspect(id, tab = "status") {
   showHiddenMessages = false;
   selected = id;
+  selectedSlot = null;
+  readingExpanded = false;
   detailScroll = {};
   $("#detail-body").scrollTop = 0;
   selectDetailTab(tab);
@@ -401,6 +475,13 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("click", (event) => {
   const tab = event.target.closest("[data-detail-tab]");
   if (tab) { selectDetailTab(tab.dataset.detailTab, true); return; }
+  const slot = event.target.closest("[data-slot-key]");
+  if (slot) {
+    selectedSlot = slot.dataset.slotKey;
+    renderDetail();
+    document.querySelector(`[data-slot-key="${CSS.escape(selectedSlot)}"]`)?.focus({preventScroll: true});
+    return;
+  }
   if (event.target.closest("#toggle-hidden-messages")) {
     showHiddenMessages = !showHiddenMessages;
     renderDetail();
@@ -424,6 +505,10 @@ document.addEventListener("click", (event) => {
     render();
   }
 });
+document.addEventListener("toggle", (event) => {
+  if (event.target.id === "reading-details" && event.target.isConnected)
+    readingExpanded = event.target.open;
+}, true);
 $("#search").addEventListener("input", (event) => {
   query = event.target.value;
   render();

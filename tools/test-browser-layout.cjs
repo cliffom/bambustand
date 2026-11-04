@@ -384,7 +384,9 @@ const {chromium} = require("playwright");
           }
           await page.keyboard.press("Enter");
           await page.locator("#detail").waitFor({state: "visible"});
-          assert.match(await page.locator("#detail-body").textContent(), /Last-known/);
+          assert.match(await page.locator("#detail-body").textContent(), /Reported offline/);
+          assert.equal(await page.locator(".job-summary, .temperature-tile").count(), 0,
+            "explicitly offline inspection omits job and temperature readings");
           await page.keyboard.press("Escape");
           // Feed and cloud outages retain explicitly offline cards while online
           // devices keep the full last-known layout.

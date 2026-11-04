@@ -21,7 +21,7 @@ const {chromium} = require("playwright");
         attention: true, conditions: Array.from({length: 12}, (_,i) => ({id: `notice-${i}`,
           text: `Synthetic condition ${i}`, guidance: "Inspect the printer before using Bambu's applications.",
           level: "warning", hidden: false, since: new Date().toISOString()})),
-        ams: Array.from({length: 6}, (_,i) => ({label: `AMS ${i + 1}`, humidity: 30, temperature: null,
+        ams: Array.from({length: 6}, (_,i) => ({id: i, label: `AMS ${i + 1}`, humidity: 30, temperature: null,
           drying_current: i < 2,
           model: i === 0 ? "AMS 2 Pro" : i === 1 ? "AMS HT" : "AMS",
           drying: i === 0 ? "Drying · 95 min remaining" : i === 1 ? "Not drying · 0 min remaining" : "Unsupported (no active dryer)",
@@ -48,9 +48,13 @@ const {chromium} = require("playwright");
       await page.keyboard.press("Enter");
       const body = page.locator("#detail-body");
       const tabs = page.getByRole("tab");
-      assert.deepEqual(await tabs.allTextContents(), ["Status", "Filament", "Notices"]);
-      assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Status");
-      for (const name of ["Status", "Filament", "Notices"]) {
+      assert.deepEqual(await tabs.allTextContents(), ["Overview", "Filament", "Notices"]);
+      assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Overview");
+      await page.locator("#reading-summary").click();
+      await page.evaluate(() => poll());
+      assert.equal(await page.locator("#reading-details").getAttribute("open"), "");
+      assert.equal(await page.locator("#reading-summary").evaluate(el => el === document.activeElement), true);
+      for (const name of ["Overview", "Filament", "Notices"]) {
         const tab = page.getByRole("tab", {name, exact:true});
         await tab.click();
         assert.equal(await body.getAttribute("aria-labelledby"), await tab.getAttribute("id"));
@@ -80,20 +84,99 @@ const {chromium} = require("playwright");
         await body.evaluate(el => { el.scrollTop = el.scrollHeight; });
         assert.equal(await tab.isVisible(), true);
         if (name === "Filament") {
-          assert.match(await body.textContent(), /Empty \(reported\)/);
-          assert.match(await body.textContent(), /Remaining: 0%/);
+          assert.match(await body.textContent(), /Reported empty/);
+          assert.match(await body.textContent(), /0% est\./);
           assert.match(await body.textContent(), /External filament/);
           assert.match(await body.textContent(), /Drying · 95 min remaining/);
           assert.match(await body.textContent(), /Not drying · 0 min remaining/);
           assert.match(await body.textContent(), /Unsupported \(no active dryer\)/);
+          const slot = page.locator('[data-slot-key="ams:4:0"]');
+          await slot.click();
+          assert.match(await page.locator("#slot-inspection").textContent(), /AMS 5 · Slot 0 · selected/);
+          assert.match(await page.locator("#slot-inspection").textContent(), /0% est\./);
+          assert.equal(await slot.getAttribute("aria-pressed"), "true");
+          const slotScroll = await body.evaluate(el => el.scrollTop);
+          printer.ams.reverse();
+          await page.evaluate(() => poll());
+          assert.equal(await slot.evaluate(el => el === document.activeElement), true);
+          assert.equal(await body.evaluate(el => el.scrollTop), slotScroll);
+          const removed = printer.ams.splice(printer.ams.findIndex(u => u.id === 4), 1)[0];
+          await page.evaluate(() => poll());
+          assert.match(await page.locator("#slot-inspection").textContent(), /Selected slot unavailable/);
+          assert.equal(await page.locator("#slot-inspection").evaluate(el => el === document.activeElement), true);
+          assert.equal(await page.locator('[data-slot-key][aria-pressed="true"]').count(), 0);
+          printer.ams.push(removed);
+          printer.ams.sort((a,b) => a.id - b.id);
+          await page.evaluate(() => poll());
+          assert.match(await page.locator("#slot-inspection").textContent(), /AMS 5 · Slot 0 · selected/);
           printer.ams[0].drying_current = false;
           printer.ams[0].drying = "Last-known · Drying · 95 min remaining";
           await page.evaluate(() => poll());
           assert.match(await body.textContent(), /Last-known · Drying · 95 min remaining/);
         }
       }
+      // Long identities and unknown progress must leave the panel and Close usable.
+      printer.name = "Inspection fixture · North workshop · Long printer name for accessible inspection";
+      printer.job = "A long synthetic job name with multiple parts and material descriptions";
+      printer.progress = null;
+      await page.getByRole("tab", {name:"Overview", exact:true}).click();
+      await page.evaluate(() => poll());
+      assert.equal(await page.locator("#detail-title").textContent(), printer.name);
+      assert.match(await page.locator(".progress-ring").textContent(), /Unknown/);
+      assert.ok(await body.evaluate(el => el.clientHeight >= parseFloat(getComputedStyle(el).lineHeight) &&
+        el.scrollWidth <= el.clientWidth), "long names and unknown progress retain a usable panel without overflow");
+      const title = page.locator("#detail-title");
+      await title.focus();
+      await title.evaluate(el => { el.scrollTop = el.scrollHeight; });
+      const titleScroll = await title.evaluate(el => el.scrollTop);
+      await page.evaluate(() => poll());
+      assert.equal(await title.evaluate(el => el === document.activeElement), true);
+      assert.equal(await title.evaluate(el => el.scrollTop), titleScroll,
+        "full printer name remains keyboard reachable and retains its reading position");
+      if (process.env.SCREENSHOT_DIR) {
+        await body.evaluate(el => { el.scrollTop = 0; });
+        await page.locator("#detail").screenshot({path: path.join(process.env.SCREENSHOT_DIR,
+          `inspector-${width}-${height}-${scale}x-long-name.png`)});
+      }
       assert.equal(writes, 0, "tab switching makes no decisions");
-      await page.getByRole("tab", {name:"Status", exact:true}).focus();
+      await page.getByRole("tab", {name:"Overview", exact:true}).click();
+      assert.equal(await page.locator("#reading-details").getAttribute("open"), "", "Reading details remains expanded across tabs");
+      for (const state of ["RUNNING", "PAUSE", "FAILED", "IDLE", "FINISH", "UNKNOWN"]) {
+        Object.assign(printer, {state, online:true, fresh:true, progress:0, remaining:0,
+          remaining_reported:new Date().toISOString(), eta_current:true});
+        await page.evaluate(() => poll());
+        assert.match(await page.locator(".progress-ring").getAttribute("aria-label"), /Reported progress: 0 percent/);
+        assert.equal(await page.locator(".job-facts").textContent().then(t => t.includes("No running finish estimate")), state !== "RUNNING");
+      }
+      Object.assign(printer, {state:"RUNNING", eta_current:false});
+      await page.evaluate(() => poll());
+      assert.match(await page.locator(".job-facts").textContent(), /Last-known finish estimate/);
+      // Missing extruder.state yields two false flags; neither proves inactivity.
+      printer.nozzles = [
+        {id:0, active:false, temperature:{current:210, target:220}},
+        {id:1, active:false, temperature:{current:180, target:190}}
+      ];
+      await page.getByRole("tab", {name:"Overview", exact:true}).focus();
+      await body.evaluate(el => { el.scrollTop = 100; });
+      const nozzleScroll = await body.evaluate(el => el.scrollTop);
+      await page.evaluate(() => poll());
+      assert.equal(await page.locator(".nozzle-activity").count(), 0);
+      assert.doesNotMatch(await body.textContent(), /Reported inactive/);
+      assert.match(await page.locator(".temperature-grid").textContent(), /210.*180/s);
+      assert.equal(await body.evaluate(el => el.scrollTop), nozzleScroll);
+      assert.equal(await page.getByRole("tab", {name:"Overview", exact:true}).evaluate(el => el === document.activeElement), true);
+      printer.nozzles[1].active = true;
+      await page.evaluate(() => poll());
+      assert.equal(await page.locator(".nozzle-activity").textContent(), "Reported active");
+      assert.equal(await page.locator(".active-nozzle").count(), 1);
+      Object.assign(printer, {fresh:false, connection:"Stale", progress:null, nozzles:[], bed:{}, chamber:{}});
+      await page.evaluate(() => poll());
+      assert.match(await body.textContent(), /Current state is unconfirmed/);
+      assert.match(await page.locator(".progress-ring").getAttribute("aria-label"), /Unknown/);
+      await page.evaluate(() => {feedError = true; renderDetail();});
+      assert.match(await body.textContent(), /Monitor unavailable/);
+      await page.evaluate(() => poll());
+      await page.getByRole("tab", {name:"Overview", exact:true}).focus();
       await page.keyboard.press("ArrowLeft");
       assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Notices");
       await page.keyboard.press("Home");
@@ -123,13 +206,13 @@ const {chromium} = require("playwright");
       Object.assign(printer, {fresh:false, online:false, connection:"Offline", ams:[], external:[]});
       await page.evaluate(() => poll());
       await page.getByRole("tab", {name:"Filament", exact:true}).click();
-      assert.match(await body.textContent(), /Last-known · AMS.*configuration unknown/s);
-      await page.getByRole("tab", {name:"Status", exact:true}).click();
-      assert.match(await body.textContent(), /Current state is unconfirmed/);
+      assert.match(await body.textContent(), /Inventory unavailable · reported offline/);
+      await page.getByRole("tab", {name:"Overview", exact:true}).click();
+      assert.match(await body.textContent(), /Reported offline/);
       await page.keyboard.press("Escape");
       assert.equal(await card.evaluate(el => el === document.activeElement), true);
       await page.keyboard.press("Enter");
-      assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Status");
+      assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Overview");
       assert.equal(await body.evaluate(el => el.scrollTop), 0);
       await page.keyboard.press("Escape");
       await page.locator("#review").click();

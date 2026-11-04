@@ -126,9 +126,10 @@
     </footer>
     <dialog id="detail" aria-labelledby="detail-title">
       <div class="dialog-header">
-        <div>
-          <div class="eyebrow">PRINTER INSPECTION</div>
-          <h2 id="detail-title"></h2>
+        <div id="detail-artwork" aria-hidden="true"></div>
+        <div class="detail-identity">
+          <div id="detail-model"></div>
+          <h2 id="detail-title" tabindex="0"></h2>
         </div>
         <button
           id="close-detail"
@@ -137,7 +138,7 @@
         ></button>
       </div>
       <div class="detail-tabs" role="tablist" aria-label="Printer inspection">
-        <button id="detail-tab-status" role="tab" data-detail-tab="status" aria-selected="true" aria-controls="detail-body">Status</button>
+        <button id="detail-tab-status" role="tab" data-detail-tab="status" aria-selected="true" aria-controls="detail-body">Overview</button>
         <button id="detail-tab-filament" role="tab" data-detail-tab="filament" aria-selected="false" aria-controls="detail-body" tabindex="-1">Filament</button>
         <button id="detail-tab-notices" role="tab" data-detail-tab="notices" aria-selected="false" aria-controls="detail-body" tabindex="-1">Notices</button>
       </div>
@@ -231,8 +232,23 @@
         identifiers are excluded.
       </p>
       <p>
-        Printer inspection has Status, Filament, and Notices tabs. Card opening
-        starts at Status; Review and notification clicks open Notices. Use Left/Right,
+        Overview groups the reported job, progress, time estimates, layers, and
+        nozzle/bed/chamber temperature tiles. Expand Reading details for independent
+        report and estimate times. Finish estimates stay anchored to the remaining-time
+        report; paused and other non-running states have no running finish estimate.
+        Unknown progress stays unknown, and old readings remain last-known. Offline
+        inspection omits job, temperature, and inventory readings; notices remain reachable.
+      </p>
+      <p>
+        In Filament, select an AMS or external slot to inspect its material, color,
+        presence, and quantity inline. Selection is local inspection, not a reported
+        nozzle assignment. Empty, zero estimate, unknown, and unavailable remain
+        distinct. A removed selected entry stays unavailable instead of selecting
+        another slot. External quantity is unavailable. Reopening clears selection.
+      </p>
+      <p>
+        Printer inspection has Overview, Filament, and Notices tabs. Card opening
+        starts at Overview; Review and notification clicks open Notices. Use Left/Right,
         Home/End on the tabs, then Tab to enter the scrolling panel. Tabs and Close
         stay visible; updates keep your tab, focus, and reading position.
       </p>
