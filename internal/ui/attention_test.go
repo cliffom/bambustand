@@ -54,14 +54,18 @@ func TestOutcomeCorrectionsRemainReadableDuringNoticeUpdates(t *testing.T) {
 		m = attentionReport(t, m, "H", `{"print":{"gcode_state":"FAILED","print_error":50348044}}`)
 		m.attention.view.SetYOffset(4)
 		offset := m.attention.view.YOffset
-		m = attentionReport(t, m, "H", `{"print":{"task_id":"B","gcode_state":"RUNNING"}}`)
-		m = attentionReport(t, m, "H", `{"print":{"gcode_state":"FAILED"}}`)
+		m = attentionReport(t, m, "H", `{"print":{"task_id":0}}`)
+		m = attentionReport(t, m, "H", `{"print":{"task_id":"B","gcode_state":"FAILED"}}`)
 		text := attentionText(m)
 		if !strings.Contains(text, "Print stopped · reason not reported") || !strings.Contains(text, "0300_400C") || strings.Contains(text, "Next: Check the print before restarting") {
 			t.Fatal("prior-job cancellation was reused or its notice lost", text)
 		}
 		if m.attention.view.YOffset != offset {
 			t.Fatal("corrected outcome disturbed notice scrolling")
+		}
+		m = attentionReport(t, m, "H", `{"print":{"gcode_state":"PAUSE","print_error":50380886}}`)
+		if text := attentionText(m); !strings.Contains(text, "automatic fire extinguishing was aborted") || !strings.Contains(text, "0300_C056") {
+			t.Fatal("dialog lost the extinguishing abort meaning or code", text)
 		}
 	}
 }

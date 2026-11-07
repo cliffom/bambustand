@@ -141,6 +141,14 @@ const {chromium} = require("playwright");
         await page.locator("#detail").screenshot({path:path.join(process.env.SCREENSHOT_DIR,
           `inspector-${width}-${height}-${scale}x-canceled.png`)});
       }
+      Object.assign(printer, {state:"PAUSE",
+        print_summary:"Print paused · Minor fire reported inside the chamber; automatic fire extinguishing was aborted",
+        print_guidance:"Inspect the printer and its reported fault; use the printer or Bambu app to resolve it."});
+      Object.assign(printer.conditions[0], {text:"Minor fire reported inside the chamber; automatic fire extinguishing was aborted", code:"0300_C056"});
+      await page.evaluate(() => poll());
+      assert.match(await body.textContent(), /automatic fire extinguishing was aborted/);
+      assert.match(await body.textContent(), /0300_C056/);
+      assert.equal(await action.evaluate(el => el === document.activeElement), true);
       // Long identities and unknown progress must leave the panel and Close usable.
       printer.name = "Inspection fixture · North workshop · Long printer name for accessible inspection";
       printer.job = "A long synthetic job name with multiple parts and material descriptions";

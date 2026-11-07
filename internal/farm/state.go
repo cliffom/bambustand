@@ -57,7 +57,10 @@ type (
 		notificationJob NotificationJob
 		// Retained print errors remain independent notices, but only an error
 		// observed since the latest job boundary can explain that job's outcome.
-		printErrorCurrentJob                    bool
+		printErrorCurrentJob bool
+		// Keep confirmed associations through zero/null/empty ID reports so a
+		// later different ID cannot reuse an earlier job's print-error evidence.
+		printErrorTask, printErrorSubtask       string
 		LastReport                              time.Time
 		RemainingReported                       time.Time
 		State, Job, Stage                       string

@@ -167,6 +167,60 @@ func TestOutcomeUsesPrintErrorSuppliedAtJobBoundary(t *testing.T) {
 	}
 }
 
+func TestOutcomeJobEvidenceSurvivesPlaceholderIDs(t *testing.T) {
+	for _, field := range []string{"task_id", "subtask_id"} {
+		for _, placeholder := range []string{`0`, `"0"`, `" 0 "`, `null`, `""`} {
+			for _, printError := range []int{50348044, 50364419} {
+				t.Run(fmt.Sprintf("%s/%s/%d", field, placeholder, printError), func(t *testing.T) {
+					s, _, at := setup(t, "x2d")
+					s.LowFilament = 0
+					report(t, s, fmt.Sprintf(`{%q:"A","gcode_state":"FAILED","print_error":%d,"hms":[]}`, field, printError), at)
+					initial := s.PrintOutcome("TEST", at)
+					code := fmt.Sprintf("%04X_%04X", printError>>16, printError&0xffff)
+					key := "TEST/fault/" + code
+					s.Acknowledge(key, true)
+					previous := s.Active[key]
+					report(t, s, fmt.Sprintf(`{%q:%s}`, field, placeholder), at.Add(time.Second))
+					report(t, s, fmt.Sprintf(`{%q:"A","gcode_state":"FAILED"}`, field), at.Add(2*time.Second))
+					if o := s.PrintOutcome("TEST", at.Add(2*time.Second)); o.Text != initial.Text {
+						t.Fatal("placeholder lost same-job fault evidence", o, initial)
+					}
+					report(t, s, fmt.Sprintf(`{%q:%s}`, field, placeholder), at.Add(3*time.Second))
+					report(t, s, fmt.Sprintf(`{%q:"B","gcode_state":"FAILED"}`, field), at.Add(4*time.Second))
+					if o := s.PrintOutcome("TEST", at.Add(4*time.Second)); o.Text != "Print stopped · reason not reported" {
+						t.Fatal("placeholder let a prior error explain the new job", o)
+					}
+					if current := s.Active[key]; !SameOccurrence(key, previous, current) || !current.Acknowledged {
+						t.Fatal("outcome association changed the independent notice review", current)
+					}
+					report(t, s, fmt.Sprintf(`{"print_error":%d}`, printError), at.Add(5*time.Second))
+					if o := s.PrintOutcome("TEST", at.Add(5*time.Second)); o.Text != initial.Text {
+						t.Fatal("explicit new-job error was ignored", o, initial)
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestOutcomeJobEvidenceRejectsInvalidMerge(t *testing.T) {
+	s, _, at := setup(t, "x2d")
+	report(t, s, `{"task_id":"A","gcode_state":"FAILED","print_error":50348044,"hms":[]}`, at)
+	report(t, s, `{"task_id":0}`, at)
+	for i := range maxTelemetryCollection {
+		report(t, s, fmt.Sprintf(`{"extension":{"key_%d":0}}`, i), at)
+	}
+	// This valid envelope exceeds the cumulative collection limit only after
+	// merging. Its new identity must not alter the accepted job association.
+	if err := s.Report("TEST", []byte(`{"print":{"task_id":"B","gcode_state":"FAILED","extension":{"new_key":0}}}`), at.Add(time.Second)); err == nil {
+		t.Fatal("oversized merge was accepted")
+	}
+	report(t, s, `{"task_id":"A","gcode_state":"FAILED"}`, at.Add(2*time.Second))
+	if o := s.PrintOutcome("TEST", at.Add(2*time.Second)); o.Text != "Task canceled" {
+		t.Fatal("rejected report changed the confirmed job association", o)
+	}
+}
+
 func TestCameraFailuresAndWindowPauseMeanings(t *testing.T) {
 	for _, tc := range []struct {
 		attr, code uint32

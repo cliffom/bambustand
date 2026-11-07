@@ -2,6 +2,7 @@ package session_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,11 +26,20 @@ func TestDisplaySharesOutcomeWithoutChangingRawStateOrTargets(t *testing.T) {
 func TestDisplayDoesNotCarryCancellationIntoNextJob(t *testing.T) {
 	s, at := fixture(t)
 	report(t, &s, `{"print":{"task_id":"A","gcode_state":"FAILED","print_error":50348044,"hms":[]}}`, at)
-	report(t, &s, `{"print":{"task_id":"B","gcode_state":"RUNNING"}}`, at.Add(time.Second))
-	report(t, &s, `{"print":{"gcode_state":"FAILED"}}`, at.Add(2*time.Second))
+	report(t, &s, `{"print":{"task_id":0}}`, at.Add(time.Second))
+	report(t, &s, `{"print":{"task_id":"B","gcode_state":"FAILED"}}`, at.Add(2*time.Second))
 	p := session.BuildDisplay(s.Farm, at.Add(2*time.Second), false).Printers[0]
 	if p.PrintSummary != "Print stopped · reason not reported" || p.State != "FAILED" || len(p.Conditions) != 2 {
 		t.Fatal("display applied retained cancellation to next job", p)
+	}
+}
+
+func TestDisplayPreservesFireExtinguishingAbort(t *testing.T) {
+	s, at := fixture(t)
+	report(t, &s, `{"print":{"gcode_state":"PAUSE","print_error":50380886,"hms":[]}}`, at)
+	p := session.BuildDisplay(s.Farm, at, false).Printers[0]
+	if !strings.Contains(p.PrintSummary, "automatic fire extinguishing was aborted") || p.State != "PAUSE" {
+		t.Fatal("display omitted the extinguishing abort", p)
 	}
 }
 

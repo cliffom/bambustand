@@ -168,6 +168,15 @@ func TestCatalogueEquipmentNames(t *testing.T) {
 	}
 }
 
+func TestCatalogueFireExtinguishingAbortMeaning(t *testing.T) {
+	if text := printErrors["0300C056"]; !strings.Contains(text, "fire") || !strings.Contains(text, "automatic fire extinguishing was aborted") {
+		t.Fatal("fire notice lost the aborted extinguishing process", text)
+	}
+	if text := printErrors["03008044"]; strings.Contains(text, "aborted") {
+		t.Fatal("general fire detection falsely claims an extinguishing abort", text)
+	}
+}
+
 // fetchCatalogue reads one English catalogue from the pinned Bambu Studio commit.
 func fetchCatalogue(t *testing.T, ctx context.Context, client *http.Client, model string) upstreamCatalogue {
 	t.Helper()

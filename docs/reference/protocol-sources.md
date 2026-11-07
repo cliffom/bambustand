@@ -71,6 +71,7 @@ The inventory includes `12`-family, sensor/electrical/drying/track-switch and ot
 | `0C00_0300_0003_0008` | Possible spaghetti detected; inspect print quality |
 | `0300_8003` | AI monitoring detected possible spaghetti; inspect print quality |
 | `0300_400C` | Task canceled |
+| `0300_C056` | Minor fire reported; automatic fire extinguishing was aborted |
 
 A paused/stopped summary combines current reported state with a described non-informational fault, preferring a print error then actionable/recovery HMS in deterministic code order. Maintenance/advisory notices do not explain a pause. An unclassified HMS notice is labeled as a reported notice rather than a confirmed cause. It does not prove causality or reconstruct earlier reports. Verified cancellation requires FAILED and the exact cancellation code observed since the latest job identity/start boundary; a retained error from a prior job remains an independent notice but cannot explain the new outcome. It does not identify an actor. FINISH establishes the displayed completion outcome. Raw state/codes and independent notices remain available; unavailable telemetry is last-known.
 
