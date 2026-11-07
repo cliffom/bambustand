@@ -73,7 +73,7 @@ func TestFilamentMessagesAndFallbacks(t *testing.T) {
 			t.Fatalf("unverified code acquired a meaning: %s", code)
 		}
 	}
-	for _, code := range []string{"07088011", "18088006", "07FF8010", "FFFFFFFF"} {
+	for _, code := range []string{"07088011", "18088006", "07FF8FFF", "FFFFFFFF"} {
 		if _, ok := printErrors[code]; ok {
 			t.Fatalf("unverified print error acquired a meaning: %s", code)
 		}

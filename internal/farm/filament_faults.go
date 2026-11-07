@@ -81,7 +81,10 @@ func filamentUnit(prefix uint32, unit int) string {
 	return AMSLabel(unit)
 }
 
-var printErrors = buildPrintErrors()
+var (
+	legacyPrintErrors = buildPrintErrors()
+	printErrors       = catalogueMessages("device_error", legacyPrintErrors)
+)
 
 // buildPrintErrors builds descriptions for verified print-error code variants.
 func buildPrintErrors() map[string]string {

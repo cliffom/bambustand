@@ -35,6 +35,8 @@ type (
 		Name              string
 		Model             string
 		State             string
+		PrintSummary      string
+		PrintGuidance     string
 		Online            bool
 		Connection        string
 		Fresh             bool
@@ -143,6 +145,8 @@ func BuildDisplay(state *farm.State, now time.Time, demo bool, decisions ...Deci
 		// State and availability are independent: only current online idle/done
 		// telemetry qualifies for the browser's available idle/finished view.
 		out.IdleFinished = out.Fresh && (p.State == farm.StateIdle || p.State == farm.StateFinished)
+		outcome := state.PrintOutcome(id, now)
+		out.PrintSummary, out.PrintGuidance = outcome.Text, outcome.NextStep()
 		for _, n := range p.Nozzles {
 			out.Nozzles = append(out.Nozzles, DisplayNozzle{ID: n.ID, Active: n.Active, Temperature: temp(n.Temperature)})
 		}

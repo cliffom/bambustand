@@ -81,6 +81,9 @@ func (m Model) detailText(w int) string {
 		field("Bed", temp(p.Bed)),
 		field("Chamber", temp(p.Chamber)),
 	}
+	if outcome := m.Farm.PrintOutcome(p.ID, m.now); outcome.Text != "" {
+		lines = append(lines[:7], append([]string{field("Print outcome", safe(outcome.Text))}, lines[7:]...)...)
+	}
 	for _, n := range p.Nozzles {
 		name := "Right Nozzle"
 		if n.ID == 1 {

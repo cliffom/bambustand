@@ -209,8 +209,16 @@ func (m *Model) syncAttentionView() {
 	d := m.attention
 	group := d.groups[d.index]
 	var lines []string
+	var outcome farm.PrintOutcome
 	if p := m.Farm.Printers[group.id]; p != nil {
 		lines = append(lines, m.styles.text.Bold(true).Render("Reported state: "+safe(stateLabel(p.State))+" · "+safe(p.Connection(m.now, m.Farm.Connected))))
+		outcome = m.Farm.PrintOutcome(group.id, m.now)
+		if outcome.Text != "" {
+			lines = append(lines, m.styles.warning.Bold(true).Render(safe(outcome.Text)))
+			if next := outcome.NextStep(); next != "" {
+				lines = append(lines, m.styles.text.Render("Next: "+safe(next)))
+			}
+		}
 	}
 	lines = append(lines, m.styles.secondary.Render("Review each notice below. Actions apply to this printer's displayed active notices."))
 	relevant := map[attentionOccurrence]bool{}
@@ -240,7 +248,7 @@ func (m *Model) syncAttentionView() {
 			text = strings.TrimSuffix(text, " ["+item.Code+"]")
 		}
 		lines = append(lines, "", m.styles.warning.Bold(true).Render(fmt.Sprintf("%d. %s", i+1, safe(text))))
-		if active && relevant[attentionOccurrence{item.Key, item.Since}] {
+		if outcome.Text == "" && active && relevant[attentionOccurrence{item.Key, item.Since}] {
 			lines = append(lines, m.styles.text.Render("Next: "+safe(item.Guidance)))
 		}
 		lines = append(lines, m.styles.secondary.Render(status), m.styles.secondary.Render(observationTime(item.Since, m.now)))

@@ -19,23 +19,28 @@ const {chromium} = require("playwright");
     ...(process.env.BROWSER_PATH ? {executablePath: process.env.BROWSER_PATH} : {})});
   const errors = [];
   try {
-    async function open(viewport = {width: 1280, height: 1200}, finished = false) {
+    async function open(viewport = {width: 1280, height: 1200}, finished = false, canceled = false) {
       const page = await browser.newPage({viewport, locale: "en-US", timezoneId: "UTC"});
       page.on("pageerror", error => errors.push(error.message));
       await page.route("**/api/snapshot", route => {
         const at = new Date().toISOString();
         const first = {...structuredClone(seed.printers[0]), id: "screenshot-h2d", state: "RUNNING",
-          online: true, fresh: true, connection: "Live", idle_finished: false, attention: false,
+          online: true, fresh: true, connection: "Live", idle_finished: false, attention: false, print_summary: "", print_guidance: "",
           progress: 62, remaining: 63, eta_current: true, layer: 186,
           last_report: at, remaining_reported: at};
         const second = {...structuredClone(seed.printers[1]), id: "screenshot-x2d",
-          state: finished ? "FINISH" : "PAUSE", online: true, fresh: true, connection: "Live",
+          state: finished ? "FINISH" : canceled ? "FAILED" : "PAUSE", online: true, fresh: true, connection: "Live",
           idle_finished: finished, progress: finished ? 100 : 71, remaining: finished ? 0 : 54,
-          layer: finished ? 300 : 213, stage: finished ? "Finished" : "Paused",
+          layer: finished ? 300 : 213, stage: finished ? "Finished" : canceled ? "Failed" : "Paused",
           attention: !finished, last_report: at, remaining_reported: at,
-          conditions: finished ? [] : [{id: "synthetic-runout", level: "warning", text: "Filament has run out.",
-            guidance: "Load filament, then use the printer or Bambu's applications to resume when safe.",
-            since: at, reviewed: false, hidden: false}]};
+          print_summary: finished ? "Print finished" : canceled ? "Task canceled" : "Print paused · AI monitoring detected possible spaghetti; inspect print quality",
+          print_guidance: finished ? "" : canceled ? "Check the print before restarting using the printer or Bambu app." : "Inspect print quality for possible spaghetti; follow the printer's instructions before continuing.",
+          conditions: finished ? [] : canceled ? [
+            {id:"synthetic-canceled", level:"error", text:"Task canceled", code:"0300_400C", since:at, reviewed:false, hidden:false},
+            {id:"synthetic-failed", level:"warning", text:"Print failed", since:at, reviewed:false, hidden:false}] : [
+            {id:"synthetic-spaghetti-hms", level:"warning", text:"Possible spaghetti detected; inspect print quality", code:"0C00_0300_0003_0008", since:at, reviewed:false, hidden:false},
+            {id:"synthetic-spaghetti-error", level:"error", text:"AI monitoring detected possible spaghetti; inspect print quality", code:"0300_8003", since:at, reviewed:false, hidden:false},
+            {id:"synthetic-paused", level:"warning", text:"Print paused", since:at, reviewed:false, hidden:false}]};
         const third = {...structuredClone(first), id: "screenshot-p1s", name: "P1S · Spare", model: "P1S",
           image: `/printers/${art}`, online: false, fresh: false, connection: "Offline",
           attention: false, conditions: [], eta_current: false};
@@ -100,9 +105,15 @@ const {chromium} = require("playwright");
     assert.equal(await page.locator('#slot-inspection').isVisible(), true);
     await shot(page, "browser-filament.png", page.locator("#detail"));
     await page.getByRole("tab", {name: "Notices", exact: true}).click();
-    assert.match(await page.locator("#detail-body").textContent(), /Filament has run out/);
+    assert.match(await page.locator("#detail-body").textContent(), /Possible spaghetti detected/);
     await shot(page, "browser-notices.png", page.locator("#detail"));
     await page.close();
+    const canceled = await open({width:1280,height:1200}, false, true);
+    await canceled.locator('[data-id="screenshot-x2d"]').click();
+    await canceled.getByRole("tab", {name:"Notices", exact:true}).click();
+    assert.match(await canceled.locator("#detail-body").textContent(), /Task canceled.*Reported state: FAILED/s);
+    await shot(canceled, "browser-canceled.png", canceled.locator("#detail"));
+    await canceled.close();
     const idle = await open({width: 1280, height: 1200}, true);
     await idle.locator('[data-filter="idle"]').click();
     assert.equal(await idle.locator(".card").count(), 1);

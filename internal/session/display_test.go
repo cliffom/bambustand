@@ -9,6 +9,19 @@ import (
 	"github.com/cliffom/bambustand/internal/session"
 )
 
+func TestDisplaySharesOutcomeWithoutChangingRawStateOrTargets(t *testing.T) {
+	s, at := fixture(t)
+	report(t, &s, fmt.Sprintf(`{"print":{"gcode_state":"FAILED","print_error":%d,"hms":[]}}`, 0x0300400C), at)
+	p := session.BuildDisplay(s.Farm, at, false).Printers[0]
+	if p.PrintSummary != "Task canceled" || p.State != "FAILED" || len(p.Conditions) != 2 || !p.Attention {
+		t.Fatal("shared summary changed underlying state/conditions", p)
+	}
+	retained := session.BuildDisplay(s.Farm, at.Add(time.Hour), false).Printers[0]
+	if retained.PrintGuidance != "" || retained.PrintSummary == p.PrintSummary || retained.Conditions[0].ID != p.Conditions[0].ID {
+		t.Fatal("freshness changed notice identity or lost qualification", retained)
+	}
+}
+
 func TestDisplayIdleFinishedRequiresReportedStateAndCurrentAvailability(t *testing.T) {
 	at := time.Date(2026, 10, 29, 0, 0, 0, 0, time.UTC)
 	for _, state := range []string{"IDLE", "FINISH", "RUNNING", "PAUSE", "FAILED", "PREPARE", "SLICING", "UNKNOWN", "FUTURE_STATE", ""} {

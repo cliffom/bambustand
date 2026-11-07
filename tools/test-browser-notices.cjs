@@ -84,6 +84,26 @@ function inspector() {
   };
 }
 
+test("shared cancellation summary retains FAILED and per-occurrence controls with one next step", () => {
+  const view = inspector();
+  view.run(`snapshot.printers[0].state = "FAILED";
+    snapshot.printers[0].print_summary = "Task canceled";
+    snapshot.printers[0].print_guidance = "Check the print and restart only when ready.";
+    snapshot.printers[0].conditions[0].guidance = "Inspect physical fault";
+    renderDetail();`);
+  assert.match(view.html(), /Task canceled/);
+  assert.match(view.html(), /Reported state: FAILED/);
+  assert.equal((view.html().match(/<strong>Next:/g) || []).length, 1);
+  assert.doesNotMatch(view.html(), /Inspect physical fault/);
+  view.focus('[data-dismiss="visible"]');
+  view.run(`snapshot.printers[0].print_summary = "Task canceled · updated"; renderDetail()`);
+  assert.equal(view.focused(), 'data-dismiss="visible"]');
+  view.run(`feedError = true; renderDetail()`);
+  assert.match(view.html(), /current state unconfirmed/);
+  assert.doesNotMatch(view.html(), /<strong>Next:/);
+  assert.match(view.html(), /data-dismiss="visible"/);
+});
+
 test("header settings opens and closes independently of live printer inspection", () => {
   const view = inspector();
   view.run('$("#settings").onclick()');

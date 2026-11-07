@@ -4,12 +4,12 @@ The automatic dialog surfaces operator-attention conditions while preserving the
 
 ## Trigger rules
 
-- Verified filament runout, empty-slot faults, filament breakage, feeder/tangle/buffer problems, feed/retract failures, failed runout recovery, and supported extrusion/nozzle faults carry explicit intervention classifications. Supported heatbed sensor, camera disconnection, chamber-control malfunction, and abnormal firmware faults also warrant review. Classification uses catalogue codes; printer-supplied wording never changes it.
-- A reported failed print warrants review even without a known fault code. Unmapped non-informational faults accompanying `PAUSE` or `FAILED` retain their reported message/code and receive generic guidance, without an inferred diagnosis.
+- Verified filament runout, empty-slot faults, filament breakage, feeder/tangle/buffer problems, feed/retract failures, failed runout recovery, and supported extrusion/nozzle faults carry explicit intervention classifications. Supported heatbed sensor, camera disconnection, chamber-control malfunction, and abnormal firmware faults also warrant review. Classification uses verified action metadata separately from catalogue descriptions; printer-supplied wording never changes it.
+- A reported failed print warrants review even without a known fault code. Unclassified non-informational faults accompanying `PAUSE` or `FAILED` retain their reported message/code and receive generic guidance, without an inferred diagnosis.
 - A pause without a known intervention, explicit user-pause reason, or automatic recovery gets a generic review prompt after both `hms` and `print_error` snapshots have arrived. Omitted fields in partial startup reports do not establish a reason or resolution.
 - Known maintenance notices, low estimated filament, cloud/offline/stale notices, explicit user pauses, and automatic purge/backup-spool switch messages do not independently open the dialog. A separate intervention-required fault or failed state remains eligible when reported alongside recovery.
 
-The catalogue is deliberately partial. Unknown errors while the printer reports running stay visible in Notices without an automatic modal. Connection loss does not prove a printer condition resolved; the dialog labels the last reported state and current connection status.
+The description catalogue covers the reviewed manufacturer source set, independently of the existing intervention classifier. Newly described codes retain their previous alert eligibility; unknown or unclassified stopped-print faults still receive review guidance. Unknown errors while the printer reports running stay visible in Notices without an automatic modal. Connection loss does not prove a printer condition resolved; the dialog labels the last reported state and current connection status.
 
 ## Batching and navigation
 
@@ -34,7 +34,13 @@ Closing or navigating away suppresses automatic re-prompting for the dialog's oc
 
 ## Reading an alert
 
-The dialog emphasizes the printer, reported state/current connection, and each independent fault summary. Suggested physical intervention appears directly below its fault as **Next**. Review status and the single code line are secondary text. `o` opens the first displayed HMS troubleshooting link; `Enter` opens a current notice with its full, copyable URL. Printer details and Notices provide access to other notices individually. The single-row footer keeps acknowledgement, hide, snooze, and close visible; notice/printer/browser navigation stays below the heading.
+The dialog leads with the printer, reported state/current connection, and a shared print outcome. For paused/stopped prints, distinct instructions appear once as **Next**, followed by every independent notice.
+
+Confirmed completion says **Print finished**; progress and elapsed time never establish it. A `FAILED` state accompanied by `0300_400C` says **Task canceled**, without guessing who canceled or repeating physical-repair instructions. The raw state remains visible. Hidden fault descriptions stay hidden in the summary; fully reviewed outcomes omit next-step guidance. Cancellation remains a reported task outcome even when its notice is hidden. Stale/offline outcomes say last-known and current state unconfirmed.
+
+Review status and the single code line are secondary text. `o` opens the first displayed HMS troubleshooting link; `Enter` opens a current notice with its full, copyable URL. Printer details and Notices provide access to other notices individually. The single-row footer keeps acknowledgement, hide, snooze, and close visible; notice/printer/browser navigation stays below the heading.
+
+[A synthetic action-needed example](../../assets/screenshots/action-needed.png) shows a consolidated pause summary with separate codes and notice histories. The demo still supplies the existing runout scenario; expanded spaghetti/cancellation mappings are covered by synthetic telemetry tests.
 
 Each occurrence shows **First observed** with an absolute local timestamp, timezone and UTC offset, and a relative age (just now, minutes, hours, or days). Ages update while the dialog remains open without moving focus or scroll. This is when the app first observed that occurrence, not a confirmed printer-side fault start or desktop delivery time. Unavailable timestamps say unavailable; a future timestamp explicitly reports clock skew rather than a negative age. Elapsed time never establishes resolution.
 

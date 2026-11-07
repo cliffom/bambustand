@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +11,34 @@ import (
 	"github.com/cliffom/bambustand/internal/farm"
 	"github.com/cliffom/bambustand/internal/monitor"
 )
+
+func TestOutcomeSummaryKeepsNoticeTrailAndScroll(t *testing.T) {
+	for _, size := range [][2]int{{60, 18}, {120, 32}} {
+		m := demoModel()
+		m = resizeModel(m, size[0], size[1])
+		m = attentionTick(attentionReport(t, m, "H", fmt.Sprintf(`{"print":{"gcode_state":"PAUSE","print_error":%d,"hms":[{"attr":%d,"code":%d}]}}`, 0x03008003, 0x0C000300, 0x00030008)))
+		text := attentionText(m)
+		if !strings.Contains(text, "Print paused") || !strings.Contains(text, "spaghetti") || strings.Count(text, "Next:") != 1 {
+			t.Fatal("related pause guidance repeated or omitted", text)
+		}
+		m.attention.view.SetYOffset(4)
+		offset := m.attention.view.YOffset
+		m = attentionReport(t, m, "H", `{"print":{"gcode_state":"FAILED","print_error":0,"hms":[]}}`)
+		m = attentionReport(t, m, "H", fmt.Sprintf(`{"print":{"print_error":%d}}`, 0x0300400C))
+		text = attentionText(m)
+		if !strings.Contains(text, "Task canceled") || !strings.Contains(text, "Resolved / no longer active") || !strings.Contains(text, "Replaced by a new occurrence") || strings.Count(text, "Next:") != 1 || strings.Contains(text, "Next: Inspect the printer and its reported fault") {
+			t.Fatal("cancel trail lost details or retained misleading repair guidance", text)
+		}
+		if m.attention.view.YOffset != offset {
+			t.Fatal("telemetry changed scroll")
+		}
+		m = resizeModel(m, 59, 17)
+		m = resizeModel(m, size[0], size[1])
+		if m.attention.view.YOffset != offset || !strings.Contains(attentionText(m), "0300_400C") {
+			t.Fatal("resize lost summary or occurrence details")
+		}
+	}
+}
 
 const runoutReport = `{"print":{"gcode_state":"PAUSE","stg_cur":6,"print_error":117473297,"hms":[{"attr":117448704,"code":131073}]}}`
 

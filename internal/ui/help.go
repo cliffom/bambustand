@@ -38,6 +38,8 @@ func (m *Model) syncHelp() {
 		"q / Ctrl+C     Quit from dashboard (close help first)",
 		"", "a marks reviewed. c hides locally; printer state is unchanged.",
 		"Drying minutes are reported, not counted down locally. Missing data stays unknown.",
+		"Print outcomes explain pauses/stops and verified cancellation; raw states and individual notices remain accessible.",
+		"Only reported FINISH confirms completion. Last-known outcomes do not confirm current state or repair.",
 		"? or Esc closes help. Scroll to read all controls.",
 	}
 	m.help.SetContent(ansi.Wrap(strings.Join(lines, "\n"), m.help.Width, ""))

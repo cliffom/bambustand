@@ -2,6 +2,7 @@ package farm
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -48,6 +49,32 @@ func TestUpstreamFaultCatalogue(t *testing.T) {
 			}
 		}
 	}
+	// Reverse coverage is essential: checking only bundled addresses cannot
+	// detect a newly published message or an omitted model-specific variant.
+	for family, codes := range known {
+		for code := range codes {
+			key := code
+			messages := printErrors
+			if family == "device_hms" {
+				key = strings.Join([]string{code[:4], code[4:8], code[8:12], code[12:]}, "_")
+				messages = hmsMessages
+			}
+			if _, ok := messages[key]; !ok {
+				t.Errorf("unaccounted upstream %s %s", family, code)
+			}
+		}
+	}
+	for _, e := range faultCatalogue.Entries {
+		for _, code := range e.Codes {
+			empty := true
+			for _, text := range known[e.Family][code] {
+				empty = empty && strings.TrimSpace(text) == ""
+			}
+			if empty != (e.Disposition == "empty-source" || e.Disposition == "internal") {
+				t.Errorf("%s %s has incorrect empty-source disposition", e.Family, code)
+			}
+		}
+	}
 	for _, family := range []struct {
 		name     string
 		messages map[string]string
@@ -69,6 +96,51 @@ func TestUpstreamFaultCatalogue(t *testing.T) {
 			}
 		}
 		t.Logf("Audited %d %s mappings against Bambu Studio %s", len(keys), family.name, catalogueCommit)
+	}
+}
+
+func TestBundledFaultInventory(t *testing.T) {
+	if faultCatalogue.Commit != catalogueCommit || strings.Join(faultCatalogue.Models, ",") != "093,094,20P,22E,239,26A,31B" {
+		t.Fatal("inventory and audit source sets differ")
+	}
+	seen := map[string]bool{}
+	counts := map[string]int{}
+	for _, e := range faultCatalogue.Entries {
+		digits := 8
+		if e.Family == "device_hms" {
+			digits = 16
+		} else if e.Family != "device_error" {
+			t.Fatal("unknown family", e.Family)
+		}
+		switch e.Disposition {
+		case "summary", "model-dependent", "empty-source":
+			if e.Text == "" {
+				t.Fatal("visible entry has no explanation", e.Codes)
+			}
+		case "internal":
+			if e.Text != "" || len(e.Codes) != 1 || e.Codes[0] != "050002000003000A" {
+				t.Fatal("unreviewed suppression", e)
+			}
+		default:
+			t.Fatal("unknown disposition", e.Disposition)
+		}
+		if len(e.Codes) == 0 {
+			t.Fatal("empty inventory group")
+		}
+		for _, code := range e.Codes {
+			if _, err := hex.DecodeString(code); err != nil || len(code) != digits || code != strings.ToUpper(code) {
+				t.Fatal("noncanonical code", code)
+			}
+			key := e.Family + "/" + code
+			if seen[key] {
+				t.Fatal("duplicate inventory code", key)
+			}
+			seen[key] = true
+			counts[e.Family]++
+		}
+	}
+	if counts["device_hms"] != 5289 || counts["device_error"] != 1082 {
+		t.Fatal("pinned inventory coverage changed", counts)
 	}
 }
 

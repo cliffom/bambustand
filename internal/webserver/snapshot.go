@@ -27,6 +27,8 @@ type (
 		Name              string      `json:"name"`
 		Model             string      `json:"model"`
 		State             string      `json:"state"`
+		PrintSummary      string      `json:"print_summary"`
+		PrintGuidance     string      `json:"print_guidance"`
 		Online            bool        `json:"online"`
 		Connection        string      `json:"connection"`
 		Fresh             bool        `json:"fresh"`
@@ -104,6 +106,7 @@ func EncodeDisplay(state session.DisplayState) []byte {
 		for _, n := range p.Nozzles {
 			next.Nozzles = append(next.Nozzles, nozzle{ID: n.ID, Active: n.Active, Temperature: temperature(n.Temperature)})
 		}
+		next.PrintSummary, next.PrintGuidance = p.PrintSummary, p.PrintGuidance
 		for _, a := range p.AMS {
 			next.AMS = append(next.AMS, ams{DryingCurrent: a.DryingCurrent, Model: a.Model, Drying: a.Drying, DryingSettings: a.DryingSettings, ID: a.ID, Label: a.Label, Humidity: a.Humidity, Temperature: a.Temperature, Slots: displaySlots(a.Slots)})
 		}
