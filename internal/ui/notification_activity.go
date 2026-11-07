@@ -191,7 +191,11 @@ func (m Model) notificationActivityView() string {
 	lines = append(lines, "")
 	if len(d.entries) > 0 {
 		entry := d.entries[d.index]
-		detail := safe(entry.Channel) + " · " + entry.Outcome + " · " + safe(entry.Subject)
+		detail := safe(entry.Channel) + " · " + entry.Outcome
+		if entry.Class != "" {
+			detail += " · " + safe(strings.ReplaceAll(entry.Class, "_", " "))
+		}
+		detail += " · " + safe(entry.Subject)
 		lines = append(lines, ansi.Truncate(detail, width, "…"))
 		reason := strings.Split(ansi.Wrap(notifications.ReasonText(entry.Reason), width, ""), "\n")
 		for i := range 2 {

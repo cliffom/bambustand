@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cliffom/bambustand/internal/farm"
 	"github.com/cliffom/bambustand/internal/notification_state"
 )
 
@@ -43,6 +44,7 @@ const (
 	ReasonStorageBusy   = "storage_busy"
 	ReasonStorageFull   = "storage_full"
 	ReasonStorage       = "storage_unavailable"
+	ReasonCollection    = "collecting_reports"
 	ReasonReservation   = "reservation_claimed"
 )
 
@@ -53,6 +55,7 @@ type Activity struct {
 	Repeats                                               uint64
 	Request                                               uint64
 	GroupSize                                             int
+	Class                                                 string
 	key                                                   string
 }
 
@@ -60,6 +63,14 @@ type Activity struct {
 // telemetry, credentials, or protocol job identifiers.
 func ReasonText(reason string) string {
 	switch reason {
+	case ReasonCollection:
+		return "Collecting related reports for up to six seconds; current conditions and policy are rechecked before delivery."
+	case notification_state.SuppressedCancellation:
+		return "Cancellation is represented by the failed-state outcome; this code does not independently request intervention."
+	case notification_state.SuppressedManualPause:
+		return "Reported manual pause; no independent intervention notification."
+	case notification_state.SuppressedRecovery:
+		return "Reported automatic recovery; no independent intervention notification."
 	case ReasonQuiet:
 		return "Quiet hours: desktop banner and sound suppressed permanently for this occurrence; no replay or summary."
 	case ReasonOwner:
@@ -203,16 +214,21 @@ func activityFor(candidate notification_state.Candidate, source Input, outcome, 
 		printer = candidate.PrinterID
 	}
 	subject := "Print completion"
+	class := "completion"
 	if candidate.Kind == notification_state.Intervention {
 		condition := source.Snapshot[candidate.PrinterID].Conditions[candidate.ConditionKey]
+		class = condition.Class
 		subject = "Printer condition"
 		if condition.Code != "" {
 			subject = "Fault " + condition.Code
 		} else if condition.State != "" {
 			subject = "Print " + strings.ToLower(condition.State)
+			if condition.Class == farm.NotificationCancellation {
+				subject = "Task canceled"
+			}
 		}
 	}
-	return Activity{PrinterID: candidate.PrinterID, Printer: printer, Subject: subject, Outcome: outcome, Reason: reason}
+	return Activity{PrinterID: candidate.PrinterID, Printer: printer, Subject: subject, Class: class, Outcome: outcome, Reason: reason}
 }
 
 func (w *Worker) recordSuppression(candidate notification_state.Candidate, source Input, reason string) {

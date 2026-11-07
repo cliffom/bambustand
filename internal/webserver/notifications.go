@@ -76,6 +76,7 @@ type (
 		seen                map[string]browserOccurrence
 		candidates          []notification_state.Candidate
 		capacity            notification_state.Capacity
+		collection          notifications.Collection
 	}
 )
 
@@ -148,7 +149,7 @@ func (b *browserWorker) observe(input notifications.Input) {
 		}
 	}
 	for _, decision := range observation.Suppressed {
-		if decision.Kind == notification_state.Intervention && (decision.Reason == notification_state.SuppressedReviewed || decision.Reason == notification_state.SuppressedNotActionable) {
+		if decision.Kind == notification_state.Intervention && (decision.Reason == notification_state.SuppressedReviewed || decision.Reason == notification_state.SuppressedNotActionable || decision.Reason == notification_state.SuppressedCancellation || decision.Reason == notification_state.SuppressedManualPause || decision.Reason == notification_state.SuppressedRecovery) {
 			if _, err := b.ledger.ReserveBatch([]string{decision.ID}); err != nil {
 				b.failed.Store(true)
 				return
@@ -177,6 +178,13 @@ func (b *browserWorker) observe(input notifications.Input) {
 			delete(b.seen, c.ID)
 		}
 	}
+	var pending []notification_state.Candidate
+	for _, c := range b.candidates {
+		if _, ok := b.seen[c.ID]; ok {
+			pending = append(pending, c)
+		}
+	}
+	b.collection.Ready(pending, input, b.now())
 	// Retain first-seen times across unknown/stale snapshots, but bound memory.
 	if len(b.seen) > browserIdentityLimit {
 		b.failed.Store(true)
@@ -231,21 +239,38 @@ func (b *browserWorker) claim(request browserRequest) browserResult {
 	}
 	b.attempts = recent
 	limit := browserBatchLimit - len(recent)
-	var ids []string
-	events := map[string]browserEvent{}
+	var pending []notification_state.Candidate
 	for _, c := range b.candidates {
 		occurrence, present := b.seen[c.ID]
-		if !present || occurrence.sequence <= request.After || !b.now().Before(occurrence.at.Add(browserEventLifetime)) || !browserEligible(c, latest) {
-			continue
+		if present && occurrence.sequence > request.After && now.Before(occurrence.at.Add(browserEventLifetime)) && browserEligible(c, latest) {
+			pending = append(pending, c)
 		}
-		// Reserve excess events too: advancing one tab's cursor cannot
-		// suppress them for another tab or a restarted host.
-		ids = append(ids, c.ID)
+	}
+	ready := b.collection.Ready(pending, latest, now)
+	readyIDs := map[string]bool{}
+	for _, c := range ready {
+		readyIDs[c.ID] = true
+	}
+	// A deferred candidate must not disappear behind the response cursor. Claims
+	// for other ready events remain deduplicated even when the cursor is held back.
+	for _, c := range pending {
+		if !readyIDs[c.ID] && b.seen[c.ID].sequence <= result.Cursor {
+			result.Cursor = b.seen[c.ID].sequence - 1
+		}
+	}
+	var ids []string
+	events := map[string]browserEvent{}
+	groups := notifications.DeliveryGroups(ready)
+	for _, group := range groups {
+		for _, c := range group {
+			ids = append(ids, c.ID)
+		}
 		if len(events) >= limit {
 			continue
 		}
+		c := group[0]
 		policy := latest.Policies[c.PrinterID]
-		body := "Needs attention. Open the dashboard to inspect reported conditions. Physical resolution is unconfirmed."
+		body := notifications.AttentionBody(group, latest)
 		if c.Kind == notification_state.Completion {
 			body = "Reports that the print finished."
 		}

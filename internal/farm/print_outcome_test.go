@@ -29,7 +29,7 @@ func TestObservedSpaghettiCancellationTrail(t *testing.T) {
 		t.Fatal("cancellation is presented as physical repair", o)
 	}
 	if !SameOccurrence("TEST/state", failed, s.Active["TEST/state"]) || len(s.Active) != 2 || len(s.Attention()) != 2 {
-		t.Fatal("presentation changed notice identity or existing alert eligibility")
+		t.Fatal("cancellation changed the state occurrence or independently requested intervention")
 	}
 	if last := p.PrintOutcome(at.Add(5*time.Hour), true); !strings.Contains(last.Text, "current state unconfirmed") || len(last.Guidance) != 0 {
 		t.Fatal("stale outcome presented as current", last)
@@ -59,7 +59,8 @@ func TestExpandedMappingPreservesFallbackAndClassification(t *testing.T) {
 		if len(code) == 8 {
 			code = code[:4] + "_" + code[4:]
 		}
-		if action := classifyFaultAction(Fault{Code: code, Text: text, Level: LevelError}); action.known {
+		_, explicitOutcome := outcomeFaultActions[code]
+		if action := classifyFaultAction(Fault{Code: code, Text: text, Level: LevelError}); action.known != explicitOutcome {
 			t.Fatal("description expansion silently changed classification", code)
 		}
 	}

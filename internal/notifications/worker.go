@@ -86,6 +86,7 @@ type (
 		awaitFresh        bool
 		changed           chan struct{}
 		batchDue          time.Time
+		collection        Collection
 		nextDelivery      time.Time
 		deliveryTimes     []time.Time
 		scheduled         bool
@@ -294,19 +295,30 @@ func (w *Worker) process(input frame) bool {
 	w.mu.Unlock()
 	if len(candidates) == 0 {
 		w.batchDue = time.Time{}
+		w.collection = Collection{}
 		return true
 	}
 	now := w.now()
 	if w.batchDue.IsZero() {
 		w.batchDue = now.Add(input.BurstWindow)
 	}
-	if now.Before(w.batchDue) || now.Before(w.nextDelivery) {
+	ready := w.collection.Ready(candidates, input.Input, now)
+	readyIDs := make(map[string]bool, len(ready))
+	for _, candidate := range ready {
+		readyIDs[candidate.ID] = true
+	}
+	for _, candidate := range candidates {
+		if !readyIDs[candidate.ID] {
+			w.recordGroup([]notification_state.Candidate{candidate}, input.Input, OutcomeStatus, ReasonCollection, 0)
+		}
+	}
+	if len(ready) == 0 || now.Before(w.batchDue) || now.Before(w.nextDelivery) {
 		return true
 	}
 	w.batchDue = time.Time{}
-	groups := deliveryGroups(candidates)
+	groups := deliveryGroups(ready)
 	if input.BurstWindow > 0 {
-		groups = [][]notification_state.Candidate{candidates}
+		groups = [][]notification_state.Candidate{ready}
 	}
 	for _, group := range groups {
 		if w.ctx.Err() != nil {
@@ -386,6 +398,12 @@ func (w *Worker) process(input frame) bool {
 		body := policy.PrinterName + " needs attention. Open BambuStand to inspect the reported condition."
 		if len(group) > 1 {
 			body = fmt.Sprintf("%s needs attention (%d notices). Open BambuStand to inspect them.", policy.PrinterName, len(group))
+		}
+		if input.Snapshot[first.PrinterID].Conditions[first.ConditionKey].Class != "" {
+			body = policy.PrinterName + ": " + AttentionBody(group, current.Input)
+			if len(group) > 1 {
+				body += fmt.Sprintf(" (%d notices)", len(group))
+			}
 		}
 		if first.Kind == notification_state.Completion {
 			body = policy.PrinterName + " reports that the print finished."
@@ -481,5 +499,5 @@ func eligible(candidate notification_state.Candidate, source, current Input) boo
 		return policy.Completion && p.Job == before.Job && p.Job.State == farm.StateFinished
 	}
 	condition, present := p.Conditions[candidate.ConditionKey]
-	return present && condition.Eligible && condition == before.Conditions[candidate.ConditionKey] && policy.Allowed[candidate.ConditionKey]
+	return present && condition.Eligible && condition == before.Conditions[candidate.ConditionKey] && p.Job.Task == before.Job.Task && p.Job.Subtask == before.Job.Subtask && policy.Allowed[candidate.ConditionKey]
 }
