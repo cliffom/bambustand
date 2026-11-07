@@ -86,3 +86,43 @@ func TestBrowserGroupsDelayedFaultsAndPause(t *testing.T) {
 		t.Fatal("notice identities merged", s.Active)
 	}
 }
+
+func TestNewerBrowserCursorCannotResetOtherTabsDeadline(t *testing.T) {
+	b, _, at := browserFixture(t)
+	s := farm.New(10)
+	s.Cloud(true, "", *at)
+	s.Discover([]farm.Device{{ID: syntheticPrinter, Online: true}}, *at)
+	observeBrowser(b, browserOutcomeInput(t, s, *at, `{"task_id":"synthetic-job","gcode_state":"FAILED","print_error":0,"hms":[]}`))
+	newerCursor := b.claim(browserRequest{Baseline: true}).Cursor
+	*at = at.Add(3 * time.Second)
+	if result := b.claim(browserRequest{After: newerCursor}); len(result.Events) != 0 {
+		t.Fatal("new tab replayed its baseline", result)
+	}
+	*at = at.Add(3 * time.Second)
+	result := b.claim(browserRequest{After: 0})
+	if len(result.Events) != 1 {
+		t.Fatal("another tab extended the fixed window", result)
+	}
+	if len(b.claim(browserRequest{After: newerCursor}).Events) != 0 {
+		t.Fatal("second claimant replayed consumed outcome")
+	}
+}
+
+func TestBrowserDifferentBaselinesCannotSplitDueGroup(t *testing.T) {
+	b, _, at := browserFixture(t)
+	s := farm.New(10)
+	s.Cloud(true, "", *at)
+	s.Discover([]farm.Device{{ID: syntheticPrinter, Online: true}}, *at)
+	observeBrowser(b, browserOutcomeInput(t, s, *at, `{"task_id":"synthetic-job","gcode_state":"RUNNING","print_error":0,"hms":[{"attr":201327360,"code":196635}]}`))
+	newerCursor := b.claim(browserRequest{Baseline: true}).Cursor
+	*at = at.Add(2 * time.Second)
+	observeBrowser(b, browserOutcomeInput(t, s, *at, `{"gcode_state":"PAUSE","print_error":201359426}`))
+	*at = at.Add(4 * time.Second)
+	result := b.claim(browserRequest{After: newerCursor})
+	if len(result.Events) != 1 {
+		t.Fatal(result)
+	}
+	if len(b.claim(browserRequest{After: 0}).Events) != 0 {
+		t.Fatal("older tab received a leftover member of the same group")
+	}
+}

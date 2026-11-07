@@ -242,7 +242,7 @@ func (b *browserWorker) claim(request browserRequest) browserResult {
 	var pending []notification_state.Candidate
 	for _, c := range b.candidates {
 		occurrence, present := b.seen[c.ID]
-		if present && occurrence.sequence > request.After && now.Before(occurrence.at.Add(browserEventLifetime)) && browserEligible(c, latest) {
+		if present && now.Before(occurrence.at.Add(browserEventLifetime)) && browserEligible(c, latest) {
 			pending = append(pending, c)
 		}
 	}
@@ -254,14 +254,24 @@ func (b *browserWorker) claim(request browserRequest) browserResult {
 	// A deferred candidate must not disappear behind the response cursor. Claims
 	// for other ready events remain deduplicated even when the cursor is held back.
 	for _, c := range pending {
-		if !readyIDs[c.ID] && b.seen[c.ID].sequence <= result.Cursor {
+		if !readyIDs[c.ID] && b.seen[c.ID].sequence > request.After && b.seen[c.ID].sequence <= result.Cursor {
 			result.Cursor = b.seen[c.ID].sequence - 1
 		}
 	}
+	// Collection belongs to the host, independently of each claimant's cursor.
+	// A newer-baseline tab must not reset another tab's fixed deadline or claim
+	// only part of a due group, leaving its other members to interrupt another tab.
 	var ids []string
 	events := map[string]browserEvent{}
 	groups := notifications.DeliveryGroups(ready)
 	for _, group := range groups {
+		visible := false
+		for _, c := range group {
+			visible = visible || b.seen[c.ID].sequence > request.After
+		}
+		if !visible {
+			continue
+		}
 		for _, c := range group {
 			ids = append(ids, c.ID)
 		}
