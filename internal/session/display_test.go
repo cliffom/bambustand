@@ -2,12 +2,46 @@ package session_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/cliffom/bambustand/internal/farm"
 	"github.com/cliffom/bambustand/internal/session"
 )
+
+func TestDisplaySharesOutcomeWithoutChangingRawStateOrTargets(t *testing.T) {
+	s, at := fixture(t)
+	report(t, &s, fmt.Sprintf(`{"print":{"gcode_state":"FAILED","print_error":%d,"hms":[]}}`, 0x0300400C), at)
+	p := session.BuildDisplay(s.Farm, at, false).Printers[0]
+	if p.PrintSummary != "Task canceled" || p.State != "FAILED" || len(p.Conditions) != 2 || !p.Attention {
+		t.Fatal("shared summary changed underlying state/conditions", p)
+	}
+	retained := session.BuildDisplay(s.Farm, at.Add(time.Hour), false).Printers[0]
+	if retained.PrintGuidance != "" || retained.PrintSummary == p.PrintSummary || retained.Conditions[0].ID != p.Conditions[0].ID {
+		t.Fatal("freshness changed notice identity or lost qualification", retained)
+	}
+}
+
+func TestDisplayDoesNotCarryCancellationIntoNextJob(t *testing.T) {
+	s, at := fixture(t)
+	report(t, &s, `{"print":{"task_id":"A","gcode_state":"FAILED","print_error":50348044,"hms":[]}}`, at)
+	report(t, &s, `{"print":{"task_id":0}}`, at.Add(time.Second))
+	report(t, &s, `{"print":{"task_id":"B","gcode_state":"FAILED"}}`, at.Add(2*time.Second))
+	p := session.BuildDisplay(s.Farm, at.Add(2*time.Second), false).Printers[0]
+	if p.PrintSummary != "Print stopped · reason not reported" || p.State != "FAILED" || len(p.Conditions) != 2 {
+		t.Fatal("display applied retained cancellation to next job", p)
+	}
+}
+
+func TestDisplayPreservesFireExtinguishingAbort(t *testing.T) {
+	s, at := fixture(t)
+	report(t, &s, `{"print":{"gcode_state":"PAUSE","print_error":50380886,"hms":[]}}`, at)
+	p := session.BuildDisplay(s.Farm, at, false).Printers[0]
+	if !strings.Contains(p.PrintSummary, "automatic fire extinguishing was aborted") || p.State != "PAUSE" {
+		t.Fatal("display omitted the extinguishing abort", p)
+	}
+}
 
 func TestDisplayIdleFinishedRequiresReportedStateAndCurrentAvailability(t *testing.T) {
 	at := time.Date(2026, 10, 29, 0, 0, 0, 0, time.UTC)

@@ -18,6 +18,8 @@ const {chromium} = require("playwright");
       const errors = [];
       page.on("pageerror", error => errors.push(error.message));
       const printer = {...structuredClone(seed.printers[0]), id: "inspection", name: "Inspection fixture",
+        state: "PAUSE", print_summary: "Print paused · AI monitoring detected possible spaghetti; inspect print quality",
+        print_guidance: "Inspect print quality and follow the printer's instructions before continuing.",
         attention: true, conditions: Array.from({length: 12}, (_,i) => ({id: `notice-${i}`,
           text: `Synthetic condition ${i}`, guidance: "Inspect the printer before using Bambu's applications.",
           level: "warning", hidden: false, since: new Date().toISOString()})),
@@ -115,6 +117,38 @@ const {chromium} = require("playwright");
           assert.match(await body.textContent(), /Last-known · Drying · 95 min remaining/);
         }
       }
+      // Shared outcomes consolidate guidance while retaining independent notice controls.
+      await page.getByRole("tab", {name:"Notices", exact:true}).click();
+      assert.match(await body.textContent(), /Print paused.*spaghetti/s);
+      assert.equal(await body.locator("strong").filter({hasText:"Next:"}).count(), 1);
+      const action = page.locator('[data-dismiss="notice-1"]');
+      await action.focus();
+      const noticeScroll = await body.evaluate(el => el.scrollTop);
+      Object.assign(printer, {state:"FAILED", print_summary:"Task canceled",
+        print_guidance:"Check the print before restarting using the printer or Bambu app."});
+      await page.evaluate(() => poll());
+      assert.match(await body.textContent(), /Task canceled.*Reported state: FAILED/s);
+      assert.equal(await action.evaluate(el => el === document.activeElement), true);
+      assert.equal(await body.evaluate(el => el.scrollTop), noticeScroll);
+      assert.equal(await page.locator('[data-dismiss]').count(), 12);
+      assert.equal(await body.locator("strong").filter({hasText:"Next:"}).count(), 1);
+      await page.evaluate(() => {feedError=true; renderDetail();});
+      assert.match(await body.textContent(), /Last-known: Task canceled; current state unconfirmed/);
+      assert.equal(await body.locator("strong").filter({hasText:"Next:"}).count(), 0);
+      await page.evaluate(() => poll());
+      if (process.env.SCREENSHOT_DIR) {
+        await body.evaluate(el => {el.scrollTop=0;});
+        await page.locator("#detail").screenshot({path:path.join(process.env.SCREENSHOT_DIR,
+          `inspector-${width}-${height}-${scale}x-canceled.png`)});
+      }
+      Object.assign(printer, {state:"PAUSE",
+        print_summary:"Print paused · Minor fire reported inside the chamber; automatic fire extinguishing was aborted",
+        print_guidance:"Inspect the printer and its reported fault; use the printer or Bambu app to resolve it."});
+      Object.assign(printer.conditions[0], {text:"Minor fire reported inside the chamber; automatic fire extinguishing was aborted", code:"0300_C056"});
+      await page.evaluate(() => poll());
+      assert.match(await body.textContent(), /automatic fire extinguishing was aborted/);
+      assert.match(await body.textContent(), /0300_C056/);
+      assert.equal(await action.evaluate(el => el === document.activeElement), true);
       // Long identities and unknown progress must leave the panel and Close usable.
       printer.name = "Inspection fixture · North workshop · Long printer name for accessible inspection";
       printer.job = "A long synthetic job name with multiple parts and material descriptions";
@@ -143,6 +177,8 @@ const {chromium} = require("playwright");
       assert.equal(await page.locator("#reading-details").getAttribute("open"), "", "Reading details remains expanded across tabs");
       for (const state of ["RUNNING", "PAUSE", "FAILED", "IDLE", "FINISH", "UNKNOWN"]) {
         Object.assign(printer, {state, online:true, fresh:true, progress:0, remaining:0,
+          print_summary: state === "FINISH" ? "Print finished" : state === "PAUSE" ? "Print paused · reason not reported" : state === "FAILED" ? "Print stopped · reason not reported" : "",
+          print_guidance: "",
           remaining_reported:new Date().toISOString(), eta_current:true});
         await page.evaluate(() => poll());
         assert.match(await page.locator(".progress-ring").getAttribute("aria-label"), /Reported progress: 0 percent/);

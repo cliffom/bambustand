@@ -4,6 +4,8 @@
 
 BambuStand separates **what the printer reports** from **when automatic modals or opt-in desktop notifications interrupt you**. Preferences and snoozes change only interruptions. Printer state, faults, notice counts, and event history remain visible. No printer controls are sent.
 
+Message descriptions and shared print outcome summaries do not change interruption eligibility or delivery grouping. A cancellation can remain eligible under the existing failed-print policy; notification grouping/classification is tracked in [#172](https://github.com/cliffom/bambustand/issues/172).
+
 ## Browser system notifications
 
 In the local web dashboard, open **Settings** with the gear button beside Help to find **Browser notifications**. **Enable** opts this browser origin into automatic system notifications and requests browser permission following your click. Permission alone does not enable automatic delivery. **Test** requests permission if necessary and sends one silent synthetic notification without enabling automatic delivery or consuming event identities. Each Test click submits a separate notification, without a shared replacement tag or application cooldown; browser/OS settings may still suppress banners. **Disable** stops this browser's automatic delivery, including other tabs at the same origin; browser/OS permission remains unchanged. The panel shows capability, permission, automatic state, and submission/connection errors. Denied permission must be changed in browser site settings. Granted permission cannot establish that OS settings or Focus allow banners or sound.

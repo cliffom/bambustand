@@ -2,6 +2,13 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.9.0 — Message meanings and print outcomes
+
+- Explain the complete reviewed seven-model catalogue: 5,289 HMS and 1,082 print-error codes, with explicit model-dependent and empty-description exceptions (#171).
+- Lead terminal action-needed alerts and printer details, and browser Overview/Notices, with a shared paused/stopped/finished outcome and distinct next steps. A verified current-job cancellation says **Task canceled** while preserving the raw `FAILED` state. Retained prior-job print errors remain independent notices and cannot explain a new job’s outcome, including through unknown job-ID reports.
+- Preserve distinct message meanings, including aborted automatic fire extinguishing. Keep individual notices, wire severity, supplied messages, troubleshooting links, local reviews and clear/recurrence identities. Unknown codes remain visible; stale outcomes are last-known. No configuration migration or printer controls are introduced.
+- Preserve notification eligibility and delivery policy. Notification grouping/classification remains tracked separately in #172.
+
 ## 0.8.0 — Web printer inspection overhaul
 
 - Replace the browser Status panel with **Overview**: a grouped job summary, reported progress ring, independent remaining/finish estimates, and temperature tiles (#169).

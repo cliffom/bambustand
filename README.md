@@ -16,13 +16,13 @@ BambuStand connects through **Bambu Cloud**, with displayed telemetry validated 
 
 ### Terminal dashboard
 
-A keyboard-driven workspace for your farm: move between printers, inspect job details and AMS filament, review action-needed notices, and set alert preferences. Built-in and custom themes let you make it your own.
+A keyboard-driven workspace for your farm: move between printers, inspect job details and AMS filament, review action-needed notices with a shared print outcome and next step, and set alert preferences. Built-in and custom themes let you make it your own.
 
 ![BambuStand terminal dashboard showing two synthetic printers, selected printer details, filament inventory, notices, and recent events.](assets/screenshots/farm.png)
 
 ### Web browser dashboard
 
-A visual farm overview with searchable, filterable printer cards, model illustrations, progress, temperatures, and filament. Open a printer for an Overview with job progress, independent time estimates, and temperature tiles; inspect selectable AMS spool racks in Filament, or review reported conditions in Notices. Unknown readings stay unknown. Stale readings are labeled last-known; offline cards show just printer identity and inactive artwork, with reading metadata and notices available through inspection.
+A visual farm overview with searchable, filterable printer cards, model illustrations, progress, temperatures, and filament. Open a printer for an Overview with job progress, independent time estimates, and temperature tiles; inspect selectable AMS spool racks in Filament, or review reported conditions in Notices. Paused, stopped, canceled and confirmed finished prints have shared outcome summaries; individual codes and local decisions remain accessible. Unknown readings stay unknown. Stale readings are labeled last-known; offline cards show just printer identity and inactive artwork, with reading metadata and notices available through inspection.
 
 ![Current browser dashboard with one filter toolbar, printing and paused printers, a simplified offline card, and the bottom status bar.](assets/screenshots/browser.png)
 

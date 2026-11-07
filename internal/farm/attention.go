@@ -85,10 +85,12 @@ func (s *State) Attention() []Attention {
 }
 
 // classifyFaultAction uses verified code metadata, never message-text matching.
+// The curated registry preserves existing policy independently of the expanded
+// description inventory. A readable new description does not establish action metadata.
 func classifyFaultAction(f Fault) faultAction {
 	code := strings.ReplaceAll(f.Code, "_", "")
 	if len(code) == printCodeHexDigits {
-		if _, known := printErrors[code]; !known {
+		if _, known := legacyPrintErrors[code]; !known {
 			return faultAction{}
 		}
 		if action, ok := printActions[code]; ok {
@@ -102,7 +104,7 @@ func classifyFaultAction(f Fault) faultAction {
 		}
 		return faultAction{known: true}
 	}
-	if _, known := hmsMessages[f.Code]; !known {
+	if _, known := legacyHMSMessages[f.Code]; !known {
 		return faultAction{}
 	}
 	raw, _ := strconv.ParseUint(code, 16, 64)

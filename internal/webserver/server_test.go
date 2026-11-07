@@ -198,6 +198,17 @@ func TestSnapshotAllowlistIsolationAndUnknowns(t *testing.T) {
 	}
 }
 
+func TestSnapshotPublishesSharedCancellationOutcome(t *testing.T) {
+	s, now := syntheticState(t)
+	if err := s.Report("PRIVATE-SERIAL", []byte(`{"print":{"gcode_state":"FAILED","print_error":50348044,"hms":[]}}`), now); err != nil {
+		t.Fatal(err)
+	}
+	p := decodeSnapshot(t, snapshotJSON(s, now, false)).Printers[0]
+	if p.State != "FAILED" || p.PrintSummary != "Task canceled" || p.PrintGuidance == "" {
+		t.Fatal("HTTP adapter lost shared cancellation interpretation", p)
+	}
+}
+
 func TestSnapshotReusesFreshnessETAAndAttention(t *testing.T) {
 	s, now := syntheticState(t)
 	p := s.Printers["PRIVATE-SERIAL"]

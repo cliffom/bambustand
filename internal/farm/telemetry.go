@@ -62,6 +62,21 @@ func (p *Printer) applyReport(payload []byte, now time.Time) (bool, error) {
 		return false, fmt.Errorf("status exceeds telemetry limits")
 	}
 	p.Raw = raw
+	changedPrintJob := (task != "" && p.printErrorTask != "" && task != p.printErrorTask) ||
+		(subtask != "" && p.printErrorSubtask != "" && subtask != p.printErrorSubtask)
+	if newIdentity || restart || changedPrintJob {
+		p.printErrorCurrentJob = false
+		p.printErrorTask, p.printErrorSubtask = "", ""
+	}
+	if task != "" {
+		p.printErrorTask = task
+	}
+	if subtask != "" {
+		p.printErrorSubtask = subtask
+	}
+	if value, supplied := delta[fieldPrintError]; supplied {
+		p.printErrorCurrentJob = number(value) != nil
+	}
 	p.observeAMSDrying(delta, now)
 	p.versionReport(object(envelope[fieldInfo]), now)
 	if newIdentity || restart {

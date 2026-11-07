@@ -80,6 +80,8 @@ macOS may retain its notification settings/history after removal. The helper doe
 
 ## Test evidence
 
+For message-catalogue updates, follow the [pinned inventory review and verification procedure](../reference/protocol-sources.md#message-catalogue-update-process). The network audit checks coverage in both directions; ordinary tests validate exact counts, dispositions and addresses offline.
+
 For UI and operator-visible behavior changes, complete the [documentation and screenshot review](documentation-direction.md#ui-behavior-and-screenshot-maintenance) in the same PR, including the README, affected guides/help, current captures, and explicit PR evidence. The capture procedure below supports that requirement; a successful capture or docs check does not prove semantic accuracy.
 
 For browser changes, run `node --test tools/test-browser-notices.cjs tools/test-browser-notifications.cjs tools/test-browser-themes.cjs` with Node.js 18 or newer (also run by Formatting and lint CI). These dependency-free tests exercise the dashboard script with a minimal DOM stand-in; use a real browser separately to inspect layout and keyboard behavior.

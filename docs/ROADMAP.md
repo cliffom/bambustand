@@ -12,7 +12,7 @@ Both hosts share session ownership and persisted notice/snooze decisions; canoni
 
 Displayed telemetry has user-reported H2D/X2D validation, and historical router-restart recovery was observed. These scoped results do not complete current-release account/persistence, firmware, notification or device validation; see the [evidence and outstanding work](development/validation.md#remaining-live-checks).
 
-Read-only AMS 2 Pro / AMS HT drying status and reported remaining minutes are delivered in both interfaces; live cloud drying behavior remains unverified. Current implementation work improves the browser printer inspector with a grouped Overview, temperature tiles and selectable filament inspection ([#169](https://github.com/cliffom/bambustand/issues/169)).
+Read-only AMS 2 Pro / AMS HT drying status and reported remaining minutes are delivered in both interfaces; live cloud drying behavior remains unverified. Browser inspection includes grouped Overview, temperature tiles and selectable filament inspection. Current work closes known message-description gaps and consolidates in-app print outcomes ([#171](https://github.com/cliffom/bambustand/issues/171)); notification grouping/classification remains a separate effort ([#172](https://github.com/cliffom/bambustand/issues/172)). These issue scopes were reviewed on 2026-11-07; their open state remains until implementation PRs merge.
 
 ## Open-issue milestones
 

@@ -8,6 +8,8 @@ The bottom dashboard row uses a contrasting background and bold hotkeys to separ
 
 The printer table's `JOB` column and printer details' `Job Name` use the reported job name, falling back to the G-code filename/path until a name is reported. Both update as partial reports arrive while the app is running. A changed task/subtask identity or a reported start from idle/done/failed clears the previous job's name and estimates; a new identity without an accompanying print state remains unknown until the printer reports its state.
 
+Printer details also show a **Print outcome** for paused/stopped, canceled and explicitly finished jobs, using the same interpretation as action-needed alerts and browser inspection. Cancellation keeps raw `FAILED` visible; last-known outcomes cannot establish the current state. All independent faults remain available in Notices. See [reading an alert](action-needed.md#reading-an-alert).
+
 ## Summary definitions
 
 | Count | Meaning |
