@@ -2,6 +2,14 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.9.1 — Related notification reports
+
+- Collect attention reports for a fixed six seconds per printer before native or browser delivery, preserving each notice and attempt identity. Confirmed completion remains separate; native cross-printer burst grouping stays optional.
+- Treat a current-job cancellation as the failed-state outcome, with restart guidance instead of generic physical-repair instructions. A later cancellation code cannot generate a second intervention notification, including after the collection window.
+- Classify possible spaghetti, manual pauses, recovery and cancellation explicitly. Keep independent faults, recurrence, unknown failures, reviews, preferences and durable replay suppression distinct; Notification activity explains collection and classification decisions.
+
+See [notification classification and grouping](user/alerts.md#notification-classification-and-grouping) for latency, channel differences and late-report limits.
+
 ## 0.9.0 — Message meanings and print outcomes
 
 - Explain the complete reviewed seven-model catalogue: 5,289 HMS and 1,082 print-error codes, with explicit model-dependent and empty-description exceptions (#171).

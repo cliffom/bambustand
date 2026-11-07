@@ -162,6 +162,14 @@ func (s Store) ObserveActivity(snapshot farm.NotificationSnapshot) (Observation,
 						reason = SuppressedReviewed
 					} else if !value.Eligible {
 						reason = SuppressedNotActionable
+						switch value.Class {
+						case farm.NotificationCancellation:
+							reason = SuppressedCancellation
+						case farm.NotificationManualPause:
+							reason = SuppressedManualPause
+						case farm.NotificationRecovery:
+							reason = SuppressedRecovery
+						}
 					}
 					result.Suppressed = append(result.Suppressed, Suppression{Candidate: candidate, Reason: reason})
 				}

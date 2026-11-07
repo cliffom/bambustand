@@ -39,6 +39,7 @@ func (m *Model) syncHelp() {
 		"", "a marks reviewed. c hides locally; printer state is unchanged.",
 		"Drying minutes are reported, not counted down locally. Missing data stays unknown.",
 		"Print outcomes explain pauses/stops and verified cancellation; raw states and individual notices remain accessible.",
+		"Notifications collect attention reports for six seconds per printer; cancellation uses one failed-state outcome.",
 		"Only reported FINISH confirms completion. Last-known outcomes do not confirm current state or repair.",
 		"? or Esc closes help. Scroll to read all controls.",
 	}

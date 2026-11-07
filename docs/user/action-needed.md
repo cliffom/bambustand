@@ -5,7 +5,8 @@ The automatic dialog surfaces operator-attention conditions while preserving the
 ## Trigger rules
 
 - Verified filament runout, empty-slot faults, filament breakage, feeder/tangle/buffer problems, feed/retract failures, failed runout recovery, and supported extrusion/nozzle faults carry explicit intervention classifications. Supported heatbed sensor, camera disconnection, chamber-control malfunction, and abnormal firmware faults also warrant review. Classification uses verified action metadata separately from catalogue descriptions; printer-supplied wording never changes it.
-- A reported failed print warrants review even without a known fault code. Unclassified non-informational faults accompanying `PAUSE` or `FAILED` retain their reported message/code and receive generic guidance, without an inferred diagnosis.
+- Possible spaghetti detection has explicit attention metadata; it does not establish a confirmed physical defect.
+- A reported failed print warrants review even without a known fault code. A current-job cancellation retains local review with restart guidance; its code does not independently send an intervention notification. Unclassified non-informational faults accompanying `PAUSE` or `FAILED` retain their reported message/code and receive generic guidance, without an inferred diagnosis.
 - A pause without a known intervention, explicit user-pause reason, or automatic recovery gets a generic review prompt after both `hms` and `print_error` snapshots have arrived. Omitted fields in partial startup reports do not establish a reason or resolution.
 - Known maintenance notices, low estimated filament, cloud/offline/stale notices, explicit user pauses, and automatic purge/backup-spool switch messages do not independently open the dialog. A separate intervention-required fault or failed state remains eligible when reported alongside recovery.
 
@@ -13,7 +14,7 @@ The description catalogue covers the reviewed manufacturer source set, independe
 
 ## Batching and navigation
 
-The first eligible occurrence starts a two-second collection window. Available incidents are presented in one dialog, grouped by printer. Additional reports update the current group or append another printer without replacing the dialog being read. Grouping is presentation only: HMS, print-error, and state notice identities remain separate.
+The first eligible occurrence starts a two-second collection window. Available incidents are presented in one dialog, grouped by printer. Additional reports update the current group or append another printer without replacing the dialog being read. Grouping preserves separate HMS, print-error, and state notice identities. The dialog's two-second window is independent from the [six-second notification collection window](alerts.md#notification-classification-and-grouping).
 
 Help, notice inspectors, the AMS/filament browser, the notice decisions view, printer alert controls, and reset/history confirmations defer opening. Alerts also wait until the terminal reaches 60 columns × 18 rows. Transport events, reconnects, and status refresh processing continue while the dialog is open. Resolved or replaced occurrences lose action guidance and remain marked in the dialog until the operator leaves it. If later telemetry supplies an explicit pause/recovery explanation, an earlier generic pause can be marked as no longer requiring an alert.
 

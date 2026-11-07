@@ -129,7 +129,7 @@ The web server is **off by default**, and its enabled setting and port are saved
 
 Optional desktop notifications are available on **macOS** and are **off by default**. Signed release archives include a Developer ID-signed and notarized `BambuStand Notify.app`; keep it beside `bambustand`. No Swift, Xcode, or Apple Developer membership is needed to run a prebuilt release.
 
-In the TUI, press `,` to open Config, use `Tab` to select **Alerts**, and select **Test Notification**. Allow macOS permission when prompted, then enable **Desktop notifications** and optionally sound. Delivery requires a running TUI session on a local Mac. Linux desktop notifications are not supported. See [notification setup and troubleshooting](docs/user/alerts.md#live-desktop-notifications).
+In the TUI, press `,` to open Config, use `Tab` to select **Alerts**, and select **Test Notification**. Allow macOS permission when prompted, then enable **Desktop notifications** and optionally sound. Delivery requires a running TUI session on a local Mac. Linux desktop notifications are not supported. Attention reports collect for six seconds per printer; cancellation uses one failed-state notification. See [notification setup and troubleshooting](docs/user/alerts.md#live-desktop-notifications).
 
 ## Build from source
 

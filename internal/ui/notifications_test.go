@@ -157,10 +157,24 @@ func TestTelemetryAndSnoozeRemainResponsiveDuringNativeDelivery(t *testing.T) {
 	m = m.WithNotifications(worker, nil)
 	next, _ := m.Update(tickMsg(m.now))
 	m = next.(Model)
-	select {
-	case <-started:
-	case <-time.After(3 * time.Second):
-		t.Fatal("delivery did not start")
+	// Drive fresh reducer ticks during the collection window, as the running
+	// TUI does. The subsequent assertions still verify the in-flight sender
+	// cannot block reducer telemetry or snooze cancellation.
+	timer := time.NewTimer(9 * time.Second)
+	defer timer.Stop()
+	poll := time.NewTicker(100 * time.Millisecond)
+	defer poll.Stop()
+	waiting := true
+	for waiting {
+		select {
+		case <-started:
+			waiting = false
+		case <-poll.C:
+			next, _ := m.Update(tickMsg(m.now.Add(100 * time.Millisecond)))
+			m = next.(Model)
+		case <-timer.C:
+			t.Fatal("delivery did not start")
+		}
 	}
 	updated := make(chan Model, 1)
 	go func() {

@@ -19,8 +19,8 @@ type (
 	}
 
 	faultAction struct {
-		guidance                     string
-		known, recovering, userPause bool
+		guidance                                   string
+		known, recovering, userPause, cancellation bool
 	}
 
 	// printerAttention collects verified reasons that affect a separate pause-state alert.
@@ -34,6 +34,8 @@ const (
 	reviewPrinter     = "Inspect the printer and its reported fault; use the printer or Bambu app to resolve it."
 	replaceFilament   = "Load replacement filament into the indicated path using the printer or Bambu app."
 	checkFilamentPath = "Inspect the spool and filament path; follow the printer's troubleshooting instructions."
+	checkCanceled     = "Check the print before restarting using the printer or Bambu app."
+	checkSpaghetti    = "Inspect print quality for possible spaghetti; follow the printer's instructions before continuing."
 	checkExtrusion    = "Inspect the extruder/nozzle; follow the printer's troubleshooting instructions."
 )
 
@@ -57,12 +59,18 @@ func (s *State) Attention() []Attention {
 			context.recovering = context.recovering || action.recovering
 			context.userPause = context.userPause || action.userPause
 			guidance := action.guidance
+			if action.cancellation && p.taskCanceled() {
+				guidance = checkCanceled
+			}
 			if !action.known && stopped && f.Level != LevelInfo {
 				guidance = reviewPrinter // Preserve an unknown fault without guessing its cause.
 			}
 			if guidance != "" {
 				context.intervention = true
 				category := faultAlertCategory(guidance)
+				if action.cancellation {
+					category = AlertFailedPrints
+				}
 				if add(id+"/"+ConditionFaultPrefix+f.Code, guidance, category) && !slices.Contains(context.categories, category) {
 					context.categories = append(context.categories, category)
 				}
@@ -77,7 +85,11 @@ func (s *State) Attention() []Attention {
 			} else if len(categories) == 0 {
 				categories = []string{AlertUnknownPauses}
 			}
-			add(id+"/"+ConditionState, reviewPrinter, categories...)
+			guidance := reviewPrinter
+			if p.taskCanceled() {
+				guidance = checkCanceled
+			}
+			add(id+"/"+ConditionState, guidance, categories...)
 		}
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].Key < items[j].Key })
@@ -88,6 +100,9 @@ func (s *State) Attention() []Attention {
 // The curated registry preserves existing policy independently of the expanded
 // description inventory. A readable new description does not establish action metadata.
 func classifyFaultAction(f Fault) faultAction {
+	if action, ok := outcomeFaultActions[f.Code]; ok {
+		return action
+	}
 	code := strings.ReplaceAll(f.Code, "_", "")
 	if len(code) == printCodeHexDigits {
 		if _, known := legacyPrintErrors[code]; !known {

@@ -50,7 +50,7 @@ func (s *State) PrintOutcome(id string, now time.Time) PrintOutcome {
 func (p *Printer) printOutcome(now time.Time, connected bool, visible []Fault, hasHiddenFaults bool) PrintOutcome {
 	out := PrintOutcome{Current: p.TelemetryCurrent(now, connected)}
 	stopped := p.State == StatePaused || p.State == StateFailed
-	canceled := p.State == StateFailed && p.printErrorCurrentJob && slices.ContainsFunc(p.Faults, func(f Fault) bool { return f.Code == "0300_400C" })
+	canceled := p.taskCanceled()
 	switch {
 	case canceled:
 		out.Text = "Task canceled"
@@ -100,7 +100,7 @@ func (p *Printer) printOutcome(now time.Time, connected bool, visible []Fault, h
 		return out
 	}
 	if canceled {
-		out.Guidance = append(out.Guidance, "Check the print before restarting using the printer or Bambu app.")
+		out.Guidance = append(out.Guidance, checkCanceled)
 	}
 	for _, f := range visible {
 		if len(f.Code) == printCodeHexDigits+1 && !p.printErrorCurrentJob {
@@ -132,3 +132,9 @@ func (p *Printer) printOutcome(now time.Time, connected bool, visible []Fault, h
 }
 
 func (o PrintOutcome) NextStep() string { return strings.Join(o.Guidance, " ") }
+
+// taskCanceled requires an exact current-job report; retained errors from another
+// job cannot explain a new failed state. It does not infer who canceled.
+func (p *Printer) taskCanceled() bool {
+	return p.State == StateFailed && p.printErrorCurrentJob && slices.ContainsFunc(p.Faults, func(f Fault) bool { return f.Code == "0300_400C" })
+}

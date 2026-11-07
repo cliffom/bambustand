@@ -78,9 +78,10 @@ func TestActivityOutcomesGroupingBoundsAndSanitization(t *testing.T) {
 		entry.Printer = strings.Repeat("Very long synthetic name ", 12) + "\x1b[2J\nunsafe"
 		entry.Outcome, entry.Reason = notifications.OutcomeAccepted, notifications.ReasonAccepted
 		entry.GroupSize, entry.Request = 3, 9
+		entry.Class = "possible_spaghetti"
 		m = key(m, "N")
 		view := ansi.Strip(m.View())
-		for _, text := range []string{"Accepted", "banner and sound are unconfirmed", "Request #9", "3 notices grouped"} {
+		for _, text := range []string{"Accepted", "banner and sound are unconfirmed", "Request #9", "3 notices grouped", "possible spaghetti"} {
 			if !strings.Contains(strings.Join(strings.Fields(view), " "), text) {
 				t.Fatal(size, "missing", text, "\n"+view)
 			}

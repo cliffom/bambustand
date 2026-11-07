@@ -10,6 +10,14 @@ type hmsActionRule struct {
 }
 
 var (
+	outcomeFaultActions = map[string]faultAction{
+		"0300_400C":           {known: true, cancellation: true},
+		"0300_8003":           {known: true, guidance: checkSpaghetti},
+		"0C00_C004":           {known: true, guidance: checkSpaghetti},
+		"0C00_8042":           {known: true, guidance: checkSpaghetti},
+		"0C00_0300_0003_0008": {known: true, guidance: checkSpaghetti},
+		"0C00_0300_0003_001B": {known: true, guidance: checkSpaghetti},
+	}
 	printActions = map[string]faultAction{
 		"03008013": {userPause: true},
 		"03004006": {guidance: checkExtrusion},

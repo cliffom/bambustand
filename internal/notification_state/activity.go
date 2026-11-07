@@ -2,6 +2,9 @@ package notification_state
 
 // These reasons describe existing delivery policy, not physical fault resolution.
 const (
+	SuppressedCancellation  = "cancellation_reason"
+	SuppressedManualPause   = "manual_pause"
+	SuppressedRecovery      = "automatic_recovery"
 	SuppressedReviewed      = "reviewed"
 	SuppressedNotActionable = "not_actionable"
 	SuppressedAccepted      = "already_accepted"

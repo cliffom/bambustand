@@ -27,6 +27,7 @@ type (
 		Level, Code, State string
 		Since              time.Time
 		Family             string
+		Class              string
 		Eligible, Reviewed bool
 	}
 )
@@ -74,6 +75,10 @@ func (s *State) NotificationSnapshot(now time.Time) NotificationSnapshot {
 			}
 			if (nc.Family == NotificationPrintFamily && !n.PrintKnown) || (nc.Family == NotificationHMSFamily && !n.HMSKnown) || (nc.Family == NotificationStateFamily && !n.StateKnown) {
 				continue
+			}
+			nc.Class = p.notificationClass(nc)
+			if nc.Class == NotificationCancellation && nc.Family != NotificationStateFamily {
+				nc.Eligible = false
 			}
 			n.Conditions[key] = nc
 		}
@@ -147,4 +152,68 @@ func notificationFaultNumber(value any) bool {
 		return err == nil
 	}
 	return false
+}
+
+// These classifications are verified semantics, independent of severity, wording,
+// notice reviews and delivery attempts. Cancellation uses the failed-state
+// occurrence; its error notice never independently warrants intervention.
+const (
+	NotificationIntervention = "intervention"
+	NotificationSpaghetti    = "possible_spaghetti"
+	NotificationManualPause  = "manual_pause"
+	NotificationCancellation = "cancellation"
+	NotificationFailure      = "failure"
+	NotificationRecovery     = "recovery"
+	NotificationUnknownPause = "unknown_pause"
+	NotificationAdvisory     = "advisory"
+	NotificationUnknownFault = "unknown_fault"
+)
+
+func (p *Printer) notificationClass(c NotificationCondition) string {
+	if c.Family == NotificationStateFamily {
+		if p.taskCanceled() {
+			return NotificationCancellation
+		}
+		if c.State == StateFailed {
+			return NotificationFailure
+		}
+		var intervention, manualPause, recovery bool
+		// Use precedence across the whole fault set. Equivalent reordered HMS
+		// snapshots must not change classification or cancel reserved delivery.
+		for _, f := range p.Faults {
+			action := classifyFaultAction(f)
+			if action.guidance == checkSpaghetti {
+				return NotificationSpaghetti
+			}
+			intervention = intervention || action.guidance != ""
+			manualPause = manualPause || action.userPause
+			recovery = recovery || action.recovering
+		}
+		switch {
+		case intervention:
+			return NotificationIntervention
+		case manualPause:
+			return NotificationManualPause
+		case recovery:
+			return NotificationRecovery
+		}
+		return NotificationUnknownPause
+	}
+	action := classifyFaultAction(Fault{Code: c.Code, Level: c.Level})
+	switch {
+	case action.cancellation:
+		return NotificationCancellation
+	case action.userPause:
+		return NotificationManualPause
+	case action.recovering:
+		return NotificationRecovery
+	case action.guidance == checkSpaghetti:
+		return NotificationSpaghetti
+	case action.guidance != "":
+		return NotificationIntervention
+	case action.known:
+		return NotificationAdvisory
+	default:
+		return NotificationUnknownFault
+	}
 }
