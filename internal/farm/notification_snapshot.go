@@ -177,23 +177,25 @@ func (p *Printer) notificationClass(c NotificationCondition) string {
 		if c.State == StateFailed {
 			return NotificationFailure
 		}
+		var intervention, manualPause, recovery bool
+		// Use precedence across the whole fault set. Equivalent reordered HMS
+		// snapshots must not change classification or cancel reserved delivery.
 		for _, f := range p.Faults {
 			action := classifyFaultAction(f)
 			if action.guidance == checkSpaghetti {
 				return NotificationSpaghetti
 			}
-			if action.guidance != "" {
-				return NotificationIntervention
-			}
+			intervention = intervention || action.guidance != ""
+			manualPause = manualPause || action.userPause
+			recovery = recovery || action.recovering
 		}
-		for _, f := range p.Faults {
-			action := classifyFaultAction(f)
-			if action.userPause {
-				return NotificationManualPause
-			}
-			if action.recovering {
-				return NotificationRecovery
-			}
+		switch {
+		case intervention:
+			return NotificationIntervention
+		case manualPause:
+			return NotificationManualPause
+		case recovery:
+			return NotificationRecovery
 		}
 		return NotificationUnknownPause
 	}

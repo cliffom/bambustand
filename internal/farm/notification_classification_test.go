@@ -3,6 +3,7 @@ package farm
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNotificationClassificationsUseVerifiedSemantics(t *testing.T) {
@@ -40,5 +41,16 @@ func TestNotificationClassificationsUseVerifiedSemantics(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestPausedClassificationIgnoresHMSOrder(t *testing.T) {
+	s, at := notificationFarm(t)
+	report(t, s, `{"gcode_state":"PAUSE","print_error":0,"hms":[{"attr":50331904,"code":65543},{"attr":201327360,"code":196635}]}`, at)
+	before := s.NotificationSnapshot(at)["TEST"].Conditions["TEST/state"]
+	report(t, s, `{"hms":[{"attr":201327360,"code":196635},{"attr":50331904,"code":65543}]}`, at.Add(time.Second))
+	after := s.NotificationSnapshot(at.Add(time.Second))["TEST"].Conditions["TEST/state"]
+	if before != after || after.Class != NotificationSpaghetti {
+		t.Fatal("equivalent fault sets changed classification", before, after)
 	}
 }

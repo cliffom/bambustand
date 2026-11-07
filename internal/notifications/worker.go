@@ -85,7 +85,7 @@ type (
 		forceFrame        bool
 		awaitFresh        bool
 		changed           chan struct{}
-		batchDue          time.Time
+		burst             burstCollection
 		collection        Collection
 		nextDelivery      time.Time
 		deliveryTimes     []time.Time
@@ -294,28 +294,32 @@ func (w *Worker) process(input frame) bool {
 	w.scheduled = len(candidates) > 0
 	w.mu.Unlock()
 	if len(candidates) == 0 {
-		w.batchDue = time.Time{}
+		w.burst = burstCollection{}
 		w.collection = Collection{}
 		return true
 	}
 	now := w.now()
-	if w.batchDue.IsZero() {
-		w.batchDue = now.Add(input.BurstWindow)
+	burstIDs := make(map[string]bool)
+	for _, candidate := range w.burst.ready(candidates, input.Input, now, input.BurstWindow) {
+		burstIDs[candidate.ID] = true
 	}
-	ready := w.collection.Ready(candidates, input.Input, now)
-	readyIDs := make(map[string]bool, len(ready))
-	for _, candidate := range ready {
+	collected := w.collection.Ready(candidates, input.Input, now)
+	readyIDs := make(map[string]bool, len(collected))
+	var ready []notification_state.Candidate
+	for _, candidate := range collected {
 		readyIDs[candidate.ID] = true
+		if burstIDs[candidate.ID] {
+			ready = append(ready, candidate)
+		}
 	}
 	for _, candidate := range candidates {
 		if !readyIDs[candidate.ID] {
 			w.recordGroup([]notification_state.Candidate{candidate}, input.Input, OutcomeStatus, ReasonCollection, 0)
 		}
 	}
-	if len(ready) == 0 || now.Before(w.batchDue) || now.Before(w.nextDelivery) {
+	if len(ready) == 0 || now.Before(w.nextDelivery) {
 		return true
 	}
-	w.batchDue = time.Time{}
 	groups := deliveryGroups(ready)
 	if input.BurstWindow > 0 {
 		groups = [][]notification_state.Candidate{ready}

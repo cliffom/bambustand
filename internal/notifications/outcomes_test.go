@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -14,6 +15,32 @@ func outcomeFarm(at time.Time) *farm.State {
 	s.Cloud(true, "", at)
 	s.Discover([]farm.Device{{ID: "TEST", Name: "Synthetic printer", Online: true}}, at)
 	return s
+}
+
+func TestReorderedHMSDoesNotCancelReservedDelivery(t *testing.T) {
+	now := time.Unix(100, 0)
+	s := outcomeFarm(now)
+	var messages []Message
+	w := scheduledWorker(t, testLedger(t), &now, &messages)
+	w.queue = make(chan frame, workerQueueCapacity)
+	outcomeReport(t, s, now, `{"gcode_state":"PAUSE","print_error":0,"hms":[{"attr":50331904,"code":65543},{"attr":201327360,"code":196635}]}`)
+	step(t, w, outcomeInput(s, now))
+	w.send = func(ctx context.Context, message Message) error {
+		// A real Submit during a reserved helper call must preserve delivery
+		// when only the order of a complete HMS snapshot changes.
+		outcomeReport(t, s, now, `{"hms":[{"attr":201327360,"code":196635},{"attr":50331904,"code":65543}]}`)
+		w.Submit(outcomeInput(s, now))
+		if ctx.Err() != nil {
+			t.Fatal("equivalent HMS snapshot canceled reserved delivery", ctx.Err())
+		}
+		messages = append(messages, message)
+		return nil
+	}
+	now = now.Add(CollectionWindow)
+	step(t, w, outcomeInput(s, now))
+	if len(messages) != 1 || w.Status().Accepted != 1 {
+		t.Fatal("reserved group was lost", messages, w.Status())
+	}
 }
 
 func outcomeInput(s *farm.State, at time.Time) Input {

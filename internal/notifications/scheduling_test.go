@@ -19,6 +19,52 @@ func scheduledWorker(t *testing.T, ledger Ledger, now *time.Time, messages *[]Me
 	return w
 }
 
+func TestCompletionDoesNotRestartPendingAttentionBurst(t *testing.T) {
+	now := time.Unix(100, 0)
+	var messages []Message
+	w := scheduledWorker(t, testLedger(t), &now, &messages)
+	input := incidentFrame()
+	input.BurstWindow = 5 * time.Second
+	condition := input.Snapshot["TEST"].Conditions["TEST/fault/0700_8011"]
+	condition.Class = farm.NotificationIntervention
+	input.Snapshot["TEST"].Conditions["TEST/fault/0700_8011"] = condition
+	other := farm.NotificationPrinter{Job: farm.NotificationJob{Task: "synthetic-completion", State: farm.StateRunning}, StateKnown: true, PrintKnown: true, HMSKnown: true}
+	input.Snapshot["OTHER"] = other
+	input.Policies["OTHER"] = input.Policies["TEST"]
+	step(t, w, input)
+	now = now.Add(time.Second)
+	other.Job.State = farm.StateFinished
+	input.Snapshot["OTHER"] = other
+	step(t, w, input)
+	now = now.Add(4 * time.Second)
+	step(t, w, input)
+	if len(messages) != 1 || !strings.Contains(messages[0].Body, "finished") {
+		t.Fatal("completion did not deliver at the original burst deadline", messages)
+	}
+	// Establish another job before the original attention becomes due.
+	other.Job = farm.NotificationJob{Task: "synthetic-next-completion", State: farm.StateRunning}
+	input.Snapshot["OTHER"] = other
+	step(t, w, input)
+	now = now.Add(time.Second)
+	other.Job.State = farm.StateFinished
+	input.Snapshot["OTHER"] = other
+	step(t, w, input)
+	if len(messages) != 2 || !strings.Contains(messages[1].Body, "Needs attention") {
+		t.Fatal("completion restarted the attention burst window", messages)
+	}
+	// A genuinely new completion needs its own burst window, even when an
+	// older attention member retained an already elapsed burst deadline.
+	step(t, w, input)
+	if len(messages) != 2 {
+		t.Fatal("new occurrence inherited an elapsed burst window", messages)
+	}
+	now = now.Add(5 * time.Second)
+	step(t, w, input)
+	if len(messages) != 3 || !strings.Contains(messages[2].Body, "finished") {
+		t.Fatal("new occurrence missed its own burst deadline", messages)
+	}
+}
+
 func step(t *testing.T, w *Worker, input Input) {
 	t.Helper()
 	w.latest = frame{sequence: w.latest.sequence + 1, Input: input}

@@ -53,3 +53,35 @@ func TestCollectionKeepsPrinterJobAndRecurrenceBoundaries(t *testing.T) {
 		t.Fatal("new job was swallowed", ready)
 	}
 }
+
+func TestBurstWindowForNewJobsAndClearedOccurrences(t *testing.T) {
+	at := time.Unix(100, 0)
+	input := Input{Snapshot: farm.NotificationSnapshot{"A": {Job: farm.NotificationJob{Task: "synthetic-a"}}}}
+	a := notification_state.Candidate{ID: "first", PrinterID: "A", Kind: notification_state.Intervention}
+	var burst burstCollection
+	if ready := burst.ready([]notification_state.Candidate{a}, input, at, 5*time.Second); len(ready) != 0 {
+		t.Fatal(ready)
+	}
+	// The old occurrence clears; its replacement cannot inherit the t=5
+	// deadline, even without an intervening empty candidate frame.
+	a.ID = "replacement"
+	if ready := burst.ready([]notification_state.Candidate{a}, input, at.Add(4*time.Second), 5*time.Second); len(ready) != 0 {
+		t.Fatal(ready)
+	}
+	if ready := burst.ready([]notification_state.Candidate{a}, input, at.Add(5*time.Second), 5*time.Second); len(ready) != 0 {
+		t.Fatal("replacement inherited cleared burst deadline", ready)
+	}
+	// A still-present fault on a new job also starts a new burst window.
+	p := input.Snapshot["A"]
+	p.Job.Task = "synthetic-next"
+	input.Snapshot["A"] = p
+	if ready := burst.ready([]notification_state.Candidate{a}, input, at.Add(9*time.Second), 5*time.Second); len(ready) != 0 {
+		t.Fatal("new job inherited an old burst deadline", ready)
+	}
+	if ready := burst.ready([]notification_state.Candidate{a}, input, at.Add(14*time.Second), 5*time.Second); len(ready) != 1 {
+		t.Fatal("new job missed its burst deadline", ready)
+	}
+	if ready := burst.ready(nil, input, at.Add(14*time.Second), 5*time.Second); len(ready) != 0 || len(burst.members) != 0 || !burst.due.IsZero() {
+		t.Fatal("empty candidate set retained burst state", burst)
+	}
+}
