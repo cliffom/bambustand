@@ -50,7 +50,7 @@ func (s *State) PrintOutcome(id string, now time.Time) PrintOutcome {
 func (p *Printer) printOutcome(now time.Time, connected bool, visible []Fault, hasHiddenFaults bool) PrintOutcome {
 	out := PrintOutcome{Current: p.TelemetryCurrent(now, connected)}
 	stopped := p.State == StatePaused || p.State == StateFailed
-	canceled := p.State == StateFailed && slices.ContainsFunc(p.Faults, func(f Fault) bool { return f.Code == "0300_400C" })
+	canceled := p.State == StateFailed && p.printErrorCurrentJob && slices.ContainsFunc(p.Faults, func(f Fault) bool { return f.Code == "0300_400C" })
 	switch {
 	case canceled:
 		out.Text = "Task canceled"
@@ -73,6 +73,9 @@ func (p *Printer) printOutcome(now time.Time, connected bool, visible []Fault, h
 			reason = "no visible fault explanation"
 		}
 		for _, f := range faults {
+			if len(f.Code) == printCodeHexDigits+1 && !p.printErrorCurrentJob {
+				continue
+			}
 			if f.Level == LevelInfo || f.Text == "Printer error" || f.Text == "Unrecognized HMS notice" || f.Text == "" {
 				continue
 			}
@@ -100,6 +103,9 @@ func (p *Printer) printOutcome(now time.Time, connected bool, visible []Fault, h
 		out.Guidance = append(out.Guidance, "Check the print before restarting using the printer or Bambu app.")
 	}
 	for _, f := range visible {
+		if len(f.Code) == printCodeHexDigits+1 && !p.printErrorCurrentJob {
+			continue
+		}
 		if canceled && f.Code == "0300_400C" {
 			continue
 		}

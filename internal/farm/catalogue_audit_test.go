@@ -144,6 +144,30 @@ func TestBundledFaultInventory(t *testing.T) {
 	}
 }
 
+func TestCatalogueEquipmentNames(t *testing.T) {
+	corrupted := regexp.MustCompile(`\bAMS [1-8](?:T|ub)\b`)
+	for _, entry := range faultCatalogue.Entries {
+		if corrupted.MatchString(entry.Text) {
+			t.Fatal("corrupted equipment label", entry.Text, entry.Codes)
+		}
+	}
+	for _, tc := range []struct{ code, equipment string }{
+		{"0500C04E", "AMS HT"},
+		{"050040C0", "AMS HT"},
+		{"1800_5500_0002_0001", "AMS HT"},
+		{"0700_4000_0002_0003", "AMS Hub"},
+		{"1800_4000_0002_0003", "AMS Hub"},
+	} {
+		text := printErrors[tc.code]
+		if len(tc.code) > printCodeHexDigits {
+			text = hmsMessages[tc.code]
+		}
+		if !strings.Contains(text, tc.equipment) {
+			t.Fatal("manufacturer equipment name lost", tc.code, text)
+		}
+	}
+}
+
 // fetchCatalogue reads one English catalogue from the pinned Bambu Studio commit.
 func fetchCatalogue(t *testing.T, ctx context.Context, client *http.Client, model string) upstreamCatalogue {
 	t.Helper()

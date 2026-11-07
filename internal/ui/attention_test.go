@@ -40,6 +40,32 @@ func TestOutcomeSummaryKeepsNoticeTrailAndScroll(t *testing.T) {
 	}
 }
 
+func TestOutcomeCorrectionsRemainReadableDuringNoticeUpdates(t *testing.T) {
+	for _, size := range [][2]int{{60, 18}, {120, 32}} {
+		m := resizeModel(demoModel(), size[0], size[1])
+		m = attentionTick(attentionReport(t, m, "H", `{"print":{"task_id":"A","gcode_state":"PAUSE","print_error":0,"hms":[{"attr":201326848,"code":131080}]}}`))
+		if text := attentionText(m); !strings.Contains(text, "image unavailable") || strings.Contains(text, "spaghetti detected") {
+			t.Fatal("camera fault lost its meaning in the dialog", text)
+		}
+		m = attentionReport(t, m, "H", `{"print":{"print_error":50364491,"hms":[]}}`)
+		if text := attentionText(m); !strings.Contains(text, "Laser Safety Window is open") {
+			t.Fatal("window pause reason missing from the dialog", text)
+		}
+		m = attentionReport(t, m, "H", `{"print":{"gcode_state":"FAILED","print_error":50348044}}`)
+		m.attention.view.SetYOffset(4)
+		offset := m.attention.view.YOffset
+		m = attentionReport(t, m, "H", `{"print":{"task_id":"B","gcode_state":"RUNNING"}}`)
+		m = attentionReport(t, m, "H", `{"print":{"gcode_state":"FAILED"}}`)
+		text := attentionText(m)
+		if !strings.Contains(text, "Print stopped · reason not reported") || !strings.Contains(text, "0300_400C") || strings.Contains(text, "Next: Check the print before restarting") {
+			t.Fatal("prior-job cancellation was reused or its notice lost", text)
+		}
+		if m.attention.view.YOffset != offset {
+			t.Fatal("corrected outcome disturbed notice scrolling")
+		}
+	}
+}
+
 const runoutReport = `{"print":{"gcode_state":"PAUSE","stg_cur":6,"print_error":117473297,"hms":[{"attr":117448704,"code":131073}]}}`
 
 // attentionReport sends telemetry through the real UI update and persistence path.

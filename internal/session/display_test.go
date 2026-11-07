@@ -22,6 +22,17 @@ func TestDisplaySharesOutcomeWithoutChangingRawStateOrTargets(t *testing.T) {
 	}
 }
 
+func TestDisplayDoesNotCarryCancellationIntoNextJob(t *testing.T) {
+	s, at := fixture(t)
+	report(t, &s, `{"print":{"task_id":"A","gcode_state":"FAILED","print_error":50348044,"hms":[]}}`, at)
+	report(t, &s, `{"print":{"task_id":"B","gcode_state":"RUNNING"}}`, at.Add(time.Second))
+	report(t, &s, `{"print":{"gcode_state":"FAILED"}}`, at.Add(2*time.Second))
+	p := session.BuildDisplay(s.Farm, at.Add(2*time.Second), false).Printers[0]
+	if p.PrintSummary != "Print stopped · reason not reported" || p.State != "FAILED" || len(p.Conditions) != 2 {
+		t.Fatal("display applied retained cancellation to next job", p)
+	}
+}
+
 func TestDisplayIdleFinishedRequiresReportedStateAndCurrentAvailability(t *testing.T) {
 	at := time.Date(2026, 10, 29, 0, 0, 0, 0, time.UTC)
 	for _, state := range []string{"IDLE", "FINISH", "RUNNING", "PAUSE", "FAILED", "PREPARE", "SLICING", "UNKNOWN", "FUTURE_STATE", ""} {

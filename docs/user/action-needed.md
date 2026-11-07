@@ -36,7 +36,7 @@ Closing or navigating away suppresses automatic re-prompting for the dialog's oc
 
 The dialog leads with the printer, reported state/current connection, and a shared print outcome. For paused/stopped prints, distinct instructions appear once as **Next**, followed by every independent notice.
 
-Confirmed completion says **Print finished**; progress and elapsed time never establish it. A `FAILED` state accompanied by `0300_400C` says **Task canceled**, without guessing who canceled or repeating physical-repair instructions. The raw state remains visible. Hidden fault descriptions stay hidden in the summary; fully reviewed outcomes omit next-step guidance. Cancellation remains a reported task outcome even when its notice is hidden. Stale/offline outcomes say last-known and current state unconfirmed.
+Confirmed completion says **Print finished**; progress and elapsed time never establish it. A `FAILED` state accompanied by `0300_400C` observed for the current job says **Task canceled**, without guessing who canceled or repeating physical-repair instructions. The raw state remains visible. Hidden fault descriptions stay hidden in the summary; fully reviewed outcomes omit next-step guidance. Cancellation remains a reported task outcome even when its notice is hidden. Stale/offline outcomes say last-known and current state unconfirmed.
 
 Review status and the single code line are secondary text. `o` opens the first displayed HMS troubleshooting link; `Enter` opens a current notice with its full, copyable URL. Printer details and Notices provide access to other notices individually. The single-row footer keeps acknowledgement, hide, snooze, and close visible; notice/printer/browser navigation stays below the heading.
 

@@ -122,3 +122,72 @@ func TestNewDescriptionsPreserveSavedReviews(t *testing.T) {
 		t.Fatal("new catalogue wording reset a restored review", c)
 	}
 }
+
+func TestOutcomePrintErrorEvidenceEndsAtJobBoundary(t *testing.T) {
+	for _, boundary := range []string{
+		`{"task_id":"B","gcode_state":"RUNNING"}`,
+		`{"subtask_id":"B","gcode_state":"RUNNING"}`,
+		`{"task_id":"B"}`,
+		`{"gcode_state":"SLICING"}`,
+		`{"gcode_state":"PREPARE"}`,
+		`{"gcode_state":"RUNNING"}`,
+	} {
+		t.Run(boundary, func(t *testing.T) {
+			s, _, at := setup(t, "x2d")
+			s.LowFilament = 0
+			report(t, s, `{"task_id":"A","subtask_id":"A","gcode_state":"FAILED","print_error":50348044,"hms":[]}`, at)
+			key := "TEST/fault/0300_400C"
+			s.Acknowledge(key, true)
+			previous := s.Active[key]
+			if o := s.PrintOutcome("TEST", at); o.Text != "Task canceled" {
+				t.Fatal("initial cancellation not recognized", o)
+			}
+			report(t, s, boundary, at.Add(time.Second))
+			report(t, s, `{"gcode_state":"FAILED"}`, at.Add(2*time.Second))
+			if o := s.PrintOutcome("TEST", at.Add(2*time.Second)); o.Text != "Print stopped · reason not reported" || strings.Contains(o.NextStep(), "restarting") {
+				t.Fatal("retained error explained a different job", o)
+			}
+			if current := s.Active[key]; !SameOccurrence(key, previous, current) || !current.Acknowledged {
+				t.Fatal("outcome boundary changed independent notice lifetime", current)
+			}
+			report(t, s, `{"print_error":50348044}`, at.Add(3*time.Second))
+			if o := s.PrintOutcome("TEST", at.Add(3*time.Second)); o.Text != "Task canceled" {
+				t.Fatal("current-job cancellation not recognized", o)
+			}
+		})
+	}
+}
+
+func TestOutcomeUsesPrintErrorSuppliedAtJobBoundary(t *testing.T) {
+	s, _, at := setup(t, "x2d")
+	report(t, s, `{"task_id":"A","gcode_state":"FAILED","print_error":50348044,"hms":[]}`, at)
+	report(t, s, `{"task_id":"B","gcode_state":"FAILED","print_error":50364419}`, at.Add(time.Second))
+	if o := s.PrintOutcome("TEST", at.Add(time.Second)); !strings.Contains(o.Text, "spaghetti") || strings.Contains(o.Text, "canceled") {
+		t.Fatal("new error supplied at boundary was ignored", o)
+	}
+}
+
+func TestCameraFailuresAndWindowPauseMeanings(t *testing.T) {
+	for _, tc := range []struct {
+		attr, code uint32
+		meaning    string
+	}{
+		{0x0C000100, 0x00020008, "image unavailable"},
+		{0x0C000400, 0x00020026, "initialization failed"},
+	} {
+		s, _, at := setup(t, "x2d")
+		report(t, s, fmt.Sprintf(`{"gcode_state":"PAUSE","print_error":0,"hms":[{"attr":%d,"code":%d}]}`, tc.attr, tc.code), at)
+		p := s.Printers["TEST"]
+		if len(p.Faults) != 1 || p.Faults[0].Level != LevelError || !strings.Contains(p.Faults[0].Text, tc.meaning) {
+			t.Fatal("camera meaning or wire severity lost", p.Faults)
+		}
+		if o := s.PrintOutcome("TEST", at); !strings.Contains(o.Text, tc.meaning) || strings.Contains(o.Text, "spaghetti detected") {
+			t.Fatal("unavailable monitoring presented as a print defect", o)
+		}
+	}
+	s, _, at := setup(t, "x2d")
+	report(t, s, `{"gcode_state":"PAUSE","print_error":50364491,"hms":[]}`, at)
+	if o := s.PrintOutcome("TEST", at); !strings.Contains(o.Text, "Laser Safety Window is open") {
+		t.Fatal("pause reason omitted", o)
+	}
+}
