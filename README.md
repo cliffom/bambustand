@@ -159,6 +159,7 @@ See [contributing](docs/development/contributing.md) for development setup, test
 ## More information
 
 - [Documentation index](docs/README.md): user guides, development, and references
+- [Notification strategy](docs/development/notification-strategy.md): current rules and shared direction for iOS/Android
 - [Troubleshooting and diagnostic exports](docs/user/diagnostics.md)
 - [Hardware validation and known gaps](docs/development/validation.md)
 - [Roadmap](docs/ROADMAP.md) and [changelog](docs/CHANGELOG.md)

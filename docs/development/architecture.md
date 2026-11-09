@@ -4,6 +4,8 @@
 
 Follow [UI direction](ui-direction.md) for visual and interaction contracts and [documentation direction](documentation-direction.md) for keeping guidance current.
 
+Follow [notification strategy](notification-strategy.md) for eligibility intent and cross-platform direction; keep implementation details here and [user controls](../user/alerts.md) aligned with it.
+
 ## State and persistence
 
 The CLI supplies no session credentials or account information to About. Theme loading retains its bundled name or resolved custom-file source separately from the JSON display name and saved configuration.
