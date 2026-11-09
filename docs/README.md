@@ -16,6 +16,7 @@ For installation, the demo, and your first connection, start with the [project R
 
 - [Contributing](development/contributing.md): setup, commands, pinned tools, and checks
 - [Architecture and conventions](development/architecture.md): state ownership, dialogs, telemetry, monitor workers, and persistence
+- [Notification strategy](development/notification-strategy.md): current eligibility and delivery boundaries, attention-only mobile direction, and maintenance requirements
 - [UI direction](development/ui-direction.md): visual, keyboard, layout, and interaction contracts with review evidence
 - [Documentation direction](development/documentation-direction.md): document ownership, change obligations, and automated checks
 - [Terminal smoke tests](development/terminal-tests.md): PTY coverage and test harness

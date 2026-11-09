@@ -12,7 +12,7 @@ Keep documentation useful for people discovering, using, and maintaining the cur
 | Root `AGENTS.md` | Required agent workflow, repository map, and links to detailed policy |
 | `docs/README.md` | Index linking every maintained Markdown document under `docs/` |
 | `docs/user/` | Current controls, configuration, behavior, and troubleshooting |
-| `docs/development/` | Contributor setup, architecture, UI/documentation direction, testing, validation, and publishing |
+| `docs/development/` | Contributor setup, architecture, notification strategy and cross-platform direction, UI/documentation direction, testing, validation, and publishing |
 | `docs/reference/` | Protocol evidence and branding asset guidance |
 | `docs/ROADMAP.md` | Short current baseline, open priorities, milestone intent, and issue links |
 | `docs/CHANGELOG.md` | Release history |
@@ -32,6 +32,8 @@ Only root `README.md` and `AGENTS.md` may be Markdown files outside `docs/`, inc
 | File moves, new topics, or deletions | Index, agent map, inbound links/anchors, source comments, and release references |
 
 Every change must assess documentation impact. Update affected guidance in the same PR. If no documentation changes are needed, explain why in the PR rather than making a cosmetic edit to satisfy a check. Automated checks do not determine whether prose matches behavior, so this assessment is a review requirement.
+
+Notification eligibility, defaults, grouping, suppression, identity/retry and delivery-lifecycle changes require review of the [notification strategy](notification-strategy.md), including its current-state baseline and mobile direction. Keep current controls in the alert guide and mechanics in architecture; link to the strategy rather than copying its decision matrix. Identify downstream iOS/Android adoption work when the directing policy changes, without claiming unverified app implementation parity.
 
 ## UI, behavior, and screenshot maintenance
 

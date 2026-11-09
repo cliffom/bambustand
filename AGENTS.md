@@ -25,6 +25,8 @@ Use the pinned tools documented in the contributing guide; Make supports overrid
 
 ## Code and behavior
 
+Read [notification strategy](docs/development/notification-strategy.md) before changing notification eligibility, defaults, grouping, suppression, identity/retry policy or delivery lifecycle. Update its current-state claims and affected guidance in the same PR; assess effects on the iOS/Android direction and identify downstream adoption work when needed. Keep proposed monitoring-loss behavior separate from implemented behavior.
+
 - `cmd/bambustand`: CLI, login, terminal lifecycle, and PTY smoke tests.
 - `internal/cloud`, `internal/mqtt`, `internal/monitor`: authentication/discovery, transport, and monitor workers.
 - `internal/farm`: telemetry decoding, normalization, condition lifetime, and farm state.
