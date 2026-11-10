@@ -12,6 +12,7 @@ import (
 	"net/http/cookiejar"
 	"strings"
 
+	"github.com/cliffom/bambustand/internal/buildinfo"
 	"github.com/cliffom/bambustand/internal/farm"
 )
 
@@ -77,10 +78,7 @@ func (c *Client) request(ctx context.Context, method, url, token string, body an
 	}
 	r.Header.Set("Content-Type", jsonContentType)
 	r.Header.Set("Accept", jsonContentType)
-	r.Header.Set("User-Agent", userAgent)
-	r.Header.Set("X-BBL-Client-Name", clientName)
-	r.Header.Set("X-BBL-Client-Type", clientType)
-	r.Header.Set("X-BBL-Client-Version", clientVersion)
+	r.Header.Set("User-Agent", fmt.Sprintf(userAgent, buildinfo.Version))
 	if token != "" {
 		r.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -105,7 +103,12 @@ func (c *Client) request(ctx context.Context, method, url, token string, body an
 	case http.StatusUnauthorized:
 		return nil, resp, ErrAuth
 	case http.StatusForbidden:
-		return nil, resp, ErrBlocked
+		// Cloudflare documents this header as the explicit challenge signal.
+		// A Server header or a mention in the body does not establish a challenge.
+		if resp.Header.Get("Cf-Mitigated") == "challenge" {
+			return nil, resp, fmt.Errorf("%w (HTTP 403; Cloudflare browser challenge required; BambuStand cannot complete this challenge)", ErrBlocked)
+		}
+		return nil, resp, fmt.Errorf("%w (HTTP 403; rejection reason unknown)", ErrBlocked)
 	case http.StatusTooManyRequests:
 		return nil, resp, ErrRateLimited
 	}
@@ -158,13 +161,16 @@ func (c *Client) Login(ctx context.Context, email, password, code string) (Login
 func (c *Client) SendCode(ctx context.Context, email string) error {
 	data, _, err := c.request(ctx, http.MethodPost, c.BaseURL+sendCodePath, "", emailCodeRequest{Email: email, Type: emailCodeLogin}, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("request email verification code: %w", err)
 	}
 	if len(data) == 0 {
 		return nil
 	}
 	var r map[string]any
-	return decode(data, &r)
+	if err := decode(data, &r); err != nil {
+		return fmt.Errorf("request email verification code: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) TwoFactor(ctx context.Context, key, code string) (string, error) {

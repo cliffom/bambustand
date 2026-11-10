@@ -24,10 +24,7 @@ const (
 	csrfHeader         = "X-Bbl-Csrf-Token"
 	mqttUsernamePrefix = "u_"
 	jsonContentType    = "application/json"
-	userAgent          = "bambu_network_agent/01.09.05.01"
-	clientName         = "OrcaSlicer"
-	clientType         = "slicer"
-	clientVersion      = "01.09.05.51"
+	userAgent          = "BambuStand/%s (+https://github.com/cliffom/bambustand)"
 )
 
 // endpoints keeps each region's API, web login, and broker addresses together.

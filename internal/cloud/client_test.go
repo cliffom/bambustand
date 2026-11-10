@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/cliffom/bambustand/internal/buildinfo"
 )
 
 type roundTrip func(*http.Request) (*http.Response, error)
@@ -66,6 +68,42 @@ func TestLoginAndDiscovery(t *testing.T) {
 	}
 }
 
+func TestAccountRequestIdentifiesBambuStand(t *testing.T) {
+	c := fake(t, func(r *http.Request) (int, string, http.Header) {
+		if got, want := r.Header.Get("User-Agent"), "BambuStand/"+buildinfo.Version+" (+https://github.com/cliffom/bambustand)"; got != want {
+			t.Fatalf("User-Agent = %q, want %q", got, want)
+		}
+		for _, header := range []string{"X-BBL-Client-Name", "X-BBL-Client-Type", "X-BBL-Client-Version"} {
+			if _, exists := r.Header[http.CanonicalHeaderKey(header)]; exists {
+				t.Fatalf("unexpected slicer identity header %s", header)
+			}
+		}
+		if r.Header.Get("Content-Type") != "application/json" || r.Header.Get("Accept") != "application/json" {
+			t.Fatal("missing JSON headers")
+		}
+		if r.URL.Path == "/v1/design-user-service/my/preference" {
+			if r.Header.Get("Authorization") != "Bearer synthetic-token" {
+				t.Fatal("missing token authorization")
+			}
+			return 200, `{"uid":123}`, nil
+		}
+		if r.Header.Get("Authorization") != "" {
+			t.Fatal("unexpected authorization on login request")
+		}
+		return 200, `{"accessToken":"synthetic-token","code":0}`, nil
+	})
+	ctx := context.Background()
+	if err := c.SendCode(ctx, "synthetic@example.invalid"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Login(ctx, "synthetic@example.invalid", "synthetic-password", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Session(ctx, "synthetic-token"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestAuthenticatorCookieFlow(t *testing.T) {
 	ctx := context.Background()
 	c := fake(t, func(r *http.Request) (int, string, http.Header) {
@@ -107,6 +145,43 @@ func TestErrorsNeverExposeResponseSecrets(t *testing.T) {
 			}
 			if strings.Contains(err.Error(), "sensitive") || strings.Contains(err.Error(), "secret") {
 				t.Fatal("secret in error", err)
+			}
+		})
+	}
+}
+
+func TestEmailCodeRejectionDiagnostics(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		headers http.Header
+		body    string
+		want    string
+	}{
+		{"challenge", http.Header{"Cf-Mitigated": {"challenge"}}, "private-email private-token", "Cloudflare browser challenge required"},
+		{"proxied API rejection", http.Header{"Server": {"cloudflare"}}, `{"message":"private-email private-token"}`, "rejection reason unknown"},
+		{"body mention", nil, `{"message":"cloudflare private-email private-token"}`, "rejection reason unknown"},
+		{"untrusted header", http.Header{"Cf-Mitigated": {"private-email private-token"}}, `{}`, "rejection reason unknown"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := 0
+			c := fake(t, func(r *http.Request) (int, string, http.Header) {
+				requests++
+				if r.URL.Path != "/v1/user-service/user/sendemail/code" || r.Method != http.MethodPost {
+					t.Fatal("unexpected code request")
+				}
+				return http.StatusForbidden, tc.body, tc.headers
+			})
+			err := c.SendCode(context.Background(), "private-email@example.invalid")
+			if !errors.Is(err, ErrBlocked) {
+				t.Fatalf("expected typed rejection, got %v", err)
+			}
+			for _, want := range []string{"request email verification code:", "HTTP 403", tc.want} {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("missing %q in %v", want, err)
+				}
+			}
+			if strings.Contains(err.Error(), "private-") || requests != 1 {
+				t.Fatal("leaked private response data or retried rejected request")
 			}
 		})
 	}

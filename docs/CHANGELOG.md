@@ -2,6 +2,12 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.9.2 — Cloud login identity
+
+- Identify account API requests as BambuStand with the running version and project URL, removing the former Bambu network-agent/OrcaSlicer identity headers that reproduced HTTP 403 rejection. This applies to password/email-code login, token validation and discovery.
+- Include the email-code request step and HTTP 403 diagnostics in login failures; identify a browser challenge only when explicitly signaled by Cloudflare.
+- Update or rebuild before retrying login if an earlier version rejects email-code, password or token login with HTTP 403. Existing saved sessions and storage remain compatible.
+
 ## 0.9.1 — Related notification reports
 
 - Collect attention reports for a fixed six seconds per printer before native or browser delivery, preserving each notice and attempt identity. Confirmed completion remains separate; native cross-printer burst grouping stays optional.
