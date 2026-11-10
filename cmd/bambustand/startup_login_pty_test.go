@@ -149,7 +149,7 @@ func TestPTYStartupLoginFailure(t *testing.T) {
 					child.send(t, "741963\r")
 				}
 			}
-			feedback := map[string]string{"login-unavailable": "unlock the OS credential store", "login-rejected": "verification code rejected", "login-request-failure": "request rejected by Bambu Cloud", "login-account-failure": "session expired or rejected"}[mode]
+			feedback := map[string]string{"login-unavailable": "unlock the OS credential store", "login-rejected": "verification code rejected", "login-request-failure": "request email verification code: request rejected by Bambu Cloud", "login-account-failure": "session expired or rejected"}[mode]
 			child.expect(t, 0, feedback)
 			child.exited(t, 1)
 			output, _ := child.transcript()
