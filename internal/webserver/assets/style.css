@@ -1422,12 +1422,12 @@ footer { gap: 8px 16px; padding: 8px 32px; font-size: .875rem; }
 .card-body { display: flex; flex-direction: column; min-width: 0; }
 .card-toggle { display: none; }
 @media (max-width: 760px) {
-  .card-head { grid-template-columns: minmax(0, 1fr) 60px 44px; gap: 8px; margin-bottom: 0; }
+  .card-head { grid-template-columns: minmax(0, 1fr) 60px; gap: 8px; margin-bottom: 0; }
   .card-head .printer-view, .card-head .printer-view .printer-sprite,
   .card-head .printer-view svg { width: 60px; height: 76px; }
-  .card-toggle { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--green); }
-  .card-toggle span { font-size: 1.5rem; line-height: 1; }
-  .card.expanded .card-toggle span { transform: rotate(180deg); }
+  .card-toggle { display: inline-flex; align-items: center; justify-content: center; width: calc(100% + 36px); min-height: 44px; margin: 12px -18px -18px; padding: 0; background: none; border: 0; border-top: 1px solid color-mix(in srgb, var(--border) 30%, transparent); border-radius: 0 0 5px 5px; color: var(--green); }
+  .card-toggle svg { width: 12px; height: 8px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .card.expanded .card-toggle svg { transform: rotate(180deg); }
   .card:not(.expanded) .card-body,
   .card:not(.expanded) .card-actions > span,
   .card:not(.expanded) [data-action="details"] { display: none; }

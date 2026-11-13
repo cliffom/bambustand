@@ -4,7 +4,7 @@ Release changes and upgrade notes are recorded below. Names and scope describe e
 
 ## 0.11.0 — Expandable mobile printer cards
 
-- Mobile browser cards start with printer identity, image, and textual status; an accessible arrow expands or collapses inline telemetry and Details.
+- Mobile browser cards start with printer identity, image, and textual status; an accessible footer chevron expands or collapses inline telemetry and Details.
 - Expansion choices follow printers through page-session updates, filtering, sorting, and resizing. Desktop cards stay fully visible; attention and unavailable-data warnings remain visible when collapsed, and offline cards retain their simplified presentation.
 
 ## 0.10.1

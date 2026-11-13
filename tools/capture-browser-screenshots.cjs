@@ -145,6 +145,7 @@ const {chromium} = require("playwright");
     const mobile = await open({width: 390, height: 844});
     await shot(mobile, "browser-mobile.png");
     await mobile.locator('.card-toggle').first().click();
+    await mobile.locator('.card-toggle').first().evaluate(el => el.scrollIntoView({block: "end"}));
     await shot(mobile, "browser-mobile-expanded.png");
     await mobile.locator('.card-toggle').first().click();
     await mobile.locator('.card.offline').focus();

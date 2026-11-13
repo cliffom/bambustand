@@ -38,6 +38,14 @@ const {chromium} = require("playwright");
         if (p.attention) assert.equal(await card.locator("[data-notices]").isVisible(), true);
         if (p.id === "disclosure-4") assert.equal(await card.locator(".telemetry-note").isVisible(), true);
         assert.ok(await toggle.evaluate(el => el.offsetWidth >= 44 && el.offsetHeight >= 44));
+        assert.ok(await toggle.evaluate(el => {
+          const card = el.closest(".card"), head = card.querySelector(".card-head");
+          const r = el.getBoundingClientRect(), c = card.getBoundingClientRect();
+          const icon = el.querySelector("svg").getBoundingClientRect();
+          return el === card.lastElementChild && r.top >= head.getBoundingClientRect().bottom &&
+            Math.abs((r.left + r.right) / 2 - (c.left + c.right) / 2) < 1 &&
+            icon.width === 12 && icon.height === 8;
+        }), "small chevron is centered in the card footer");
         await toggle.focus();
         await page.keyboard.press("Enter");
         assert.equal(await toggle.getAttribute("aria-expanded"), "true");
