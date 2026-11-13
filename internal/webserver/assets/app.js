@@ -27,6 +27,8 @@ const detailTabs = ["status", "filament", "notices"];
 let detailTab = "status", detailScroll = {};
 let selectedSlot = null, readingExpanded = false, detailIdentity = "";
 let restoringCardFocus = false;
+// Browser-local presentation only; retained while filtering/sorting this page.
+const expandedCards = new Set();
 let detailOpener = null;
 let csrfToken = null;
 let snapshot = null,
@@ -124,17 +126,20 @@ function card(p) {
   const offline = p.online === false;
   const label = offline ? "Offline" : status(p);
   const action = (text, kind = "name") => `<button data-action="${kind}" data-open="${escapeHTML(p.id)}" aria-haspopup="dialog"${kind === "notices" ? ' data-notices="true"' : ''}>${text}</button>`;
+  const expanded = expandedCards.has(p.id);
+  const bodyID = `card-body-${encodeURIComponent(p.id)}`;
+  const toggle = `<button class="card-toggle" data-action="expand" data-open="${escapeHTML(p.id)}" aria-expanded="${expanded}" aria-controls="${escapeHTML(bodyID)} ${escapeHTML(bodyID)}-actions" aria-label="${expanded ? "Collapse" : "Expand"} ${escapeHTML(p.name)} card"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5"/></svg></button>`;
   const heading = `<div class="card-head"><div class="card-identity"><h3>${action(escapeHTML(p.name))}</h3><div class="model">${escapeHTML(p.model || "Unknown model")}</div><span class="pill ${p.attention || !current(p) ? "warn" : p.state === "IDLE" ? "neutral" : ""}">${escapeHTML(label)}</span></div><div class="printer-view">${machine(p)}</div></div>`;
-  const actions = `<div class="card-actions">${p.attention ? action('◇ Attention · view notices', 'notices') : `<span>${p.conditions.some(condition => !condition.hidden) ? 'Reported notices' : 'No active notices'}</span>`}${action('Details ↗', 'details')}</div>`;
-  const opening = `<article class="card ${p.attention ? "warning" : ""}${offline ? " offline" : ""}" data-id="${escapeHTML(p.id)}" tabindex="-1" aria-label="Inspect ${escapeHTML(p.name)}, ${escapeHTML(label)}">`;
-  if (offline) return `${opening}${heading}${actions}</article>`;
+  const actions = `<div class="card-actions" id="${escapeHTML(bodyID)}-actions">${p.attention ? action('◇ Attention · view notices', 'notices') : `<span>${p.conditions.some(condition => !condition.hidden) ? 'Reported notices' : 'No active notices'}</span>`}${action('Details ↗', 'details')}</div>`;
+  const opening = `<article class="card ${p.attention ? "warning" : ""}${offline ? " offline" : ""}${expanded ? " expanded" : ""}" data-id="${escapeHTML(p.id)}" tabindex="-1" aria-label="Inspect ${escapeHTML(p.name)}, ${escapeHTML(label)}">`;
+  if (offline) return `${opening}${heading}<div class="card-body" id="${escapeHTML(bodyID)}"></div>${actions}${toggle}</article>`;
   const slots = allSlots(p).filter((s) => s.present !== false),
     nozzle = p.nozzles.find((n) => n.active) || p.nozzles[0];
   const progress = Number.isFinite(p.progress) ? Math.max(0, Math.min(100, p.progress)) : null;
   const idle = p.state === "IDLE";
   const finish = p.state === "RUNNING" && p.remaining != null && Number.isFinite(Date.parse(p.remaining_reported))
     ? new Date(Date.parse(p.remaining_reported) + p.remaining * 60000).toLocaleTimeString(undefined, {hour: "numeric", minute: "2-digit"}) : "Unavailable";
-  return `${opening}${heading}${!current(p) ? '<p class="card-note telemetry-note">Current state unconfirmed · readings are last-known; missing values remain unknown.</p>' : ""}<div class="job">${idle ? "No active print" : escapeHTML(p.job || "No reported job")}</div>${idle ? "" : `<div class="progress-label"><span>Reported progress</span><strong>${progress === null ? "Unknown" : progress + "%"}</strong></div><div class="progress-track"><span style="width:${progress || 0}%"></span></div><div class="metrics timing"><div>Remaining<strong>${escapeHTML(remaining(p))}</strong></div><div>Est. finish<strong>${finish !== "Unavailable" && (!current(p) || !p.eta_current) ? "Last-known: " : ""}${escapeHTML(finish)}</strong></div></div>`}<div class="metrics"><div>Nozzle<strong>${temperature(nozzle?.temperature)}</strong></div><div>Bed<strong>${temperature(p.bed)}</strong></div></div><div class="card-bottom"><div class="swatches">${slots.slice(0, 4).map(s => swatch(s.color)).join("")}<span>${escapeHTML(slots[0]?.material || "Unknown material")}</span></div><span>${current(p) ? '<i class="green"></i>Fresh' : "◷ Last-known"}</span></div>${actions}</article>`;
+  return `${opening}${heading}${!current(p) ? '<p class="card-note telemetry-note">Current state unconfirmed · readings are last-known; missing values remain unknown.</p>' : ""}<div class="card-body" id="${escapeHTML(bodyID)}"><div class="job">${idle ? "No active print" : escapeHTML(p.job || "No reported job")}</div>${idle ? "" : `<div class="progress-label"><span>Reported progress</span><strong>${progress === null ? "Unknown" : progress + "%"}</strong></div><div class="progress-track"><span style="width:${progress || 0}%"></span></div><div class="metrics timing"><div>Remaining<strong>${escapeHTML(remaining(p))}</strong></div><div>Est. finish<strong>${finish !== "Unavailable" && (!current(p) || !p.eta_current) ? "Last-known: " : ""}${escapeHTML(finish)}</strong></div></div>`}<div class="metrics"><div>Nozzle<strong>${temperature(nozzle?.temperature)}</strong></div><div>Bed<strong>${temperature(p.bed)}</strong></div></div><div class="card-bottom"><div class="swatches">${slots.slice(0, 4).map(s => swatch(s.color)).join("")}<span>${escapeHTML(slots[0]?.material || "Unknown material")}</span></div><span>${current(p) ? '<i class="green"></i>Fresh' : "◷ Last-known"}</span></div></div>${actions}${toggle}</article>`;
 }
 // Keep connected card/image elements across polls. Replacing #cards.innerHTML
 // recreates lazy, async-decoded images even when their immutable URL is unchanged.
@@ -493,6 +498,27 @@ document.addEventListener("keydown", (event) => {
   selectDetailTab(detailTabs[next], true);
 });
 document.addEventListener("click", (event) => {
+  const toggle = event.target.closest(".card-toggle");
+  if (toggle) {
+    const id = toggle.dataset.open;
+    if (expandedCards.has(id)) expandedCards.delete(id);
+    else expandedCards.add(id);
+    render();
+    // Explicit keyboard disclosure is navigation; passive telemetry renders are not.
+    if (event.detail === 0) requestAnimationFrame(() => {
+      const target = document.querySelector(`button[data-open="${CSS.escape(id)}"][data-action="expand"]`);
+      if (document.activeElement !== target) return;
+      target.scrollIntoView({block: "nearest", inline: "nearest"});
+      requestAnimationFrame(() => {
+        const shell = $(".shell"), toolbar = $(".toolbar");
+        if (document.activeElement !== target || !shell || !toolbar || shell.classList.contains("toolbar-scrolls")) return;
+        const top = Math.max(shell.getBoundingClientRect().top, toolbar.getBoundingClientRect().bottom) + 8;
+        const focusedTop = target.getBoundingClientRect().top;
+        if (focusedTop < top) shell.scrollTop += focusedTop - top;
+      });
+    });
+    return;
+  }
   const tab = event.target.closest("[data-detail-tab]");
   if (tab) { selectDetailTab(tab.dataset.detailTab, true); return; }
   const slot = event.target.closest("[data-slot-key]");
@@ -549,7 +575,11 @@ $("#detail").addEventListener("close", () => {
       ? `button[data-open="${CSS.escape(opener.printer)}"][data-action="${CSS.escape(opener.action)}"]`
       : `.card[data-id="${CSS.escape(opener.printer)}"]`)
     : opener?.element?.isConnected ? opener.element : null;
-  (target || activeFilterControl())?.focus({preventScroll: true});
+  const visibleTarget = target?.getClientRects().length ? target : null;
+  const name = target && opener?.printer
+    ? document.querySelector(`button[data-open="${CSS.escape(opener.printer)}"][data-action="name"]`) : null;
+  const visibleName = name?.getClientRects().length ? name : null;
+  (visibleTarget || visibleName || activeFilterControl())?.focus({preventScroll: true});
   detailOpener = null;
 });
 $("#close-detail").onclick = () => $("#detail").close();
@@ -601,6 +631,13 @@ function setupWorkspaceLayout() {
   // Reflow can change header, toolbar, and footer heights (including 200% text).
   const observer = new ResizeObserver(measure);
   for (const element of [shell, header, toolbar]) observer.observe(element);
+  // Responsive CSS can blur an action before the resize event runs.
+  shell.addEventListener("focusout", event => {
+    const action = event.target.closest("button[data-open]");
+    if (!action || event.relatedTarget || !action.isConnected || action.getClientRects().length) return;
+    const name = action.closest(".card")?.querySelector('[data-action="name"]');
+    if (name?.getClientRects().length) name.focus();
+  });
   shell.addEventListener("focusin", event => {
     const card = event.target.closest(".card");
     if (!card || restoringCardFocus) return;

@@ -16,6 +16,121 @@ const {chromium} = require("playwright");
     ...(process.env.BROWSER_PATH ? {executablePath: process.env.BROWSER_PATH} : {}),
   });
   try {
+    // Mobile disclosure is independent from inspector navigation and telemetry.
+    for (const [width, height, scale] of [[390, 844, 1], [320, 568, 2], [568, 320, 2], [760, 844, 1]]) {
+      const page = await browser.newPage({viewport: {width, height}});
+      const printers = ["RUNNING", "IDLE", "FINISH", "PAUSE", "UNKNOWN", "RUNNING"].map((state, i) => ({
+        ...seed.printers[0], id: `disclosure-${i}`, name: i === 4 ? "Long synthetic printer name with unknown model" : `Printer ${i}`,
+        model: i === 4 ? "" : "H2D", image: i === 4 ? "" : seed.printers[0].image,
+        state, online: i !== 5, fresh: i !== 4 && i !== 5, attention: i === 3 || i === 5,
+        idle_finished: i === 1 || i === 2, conditions: [],
+      }));
+      await page.route("**/api/snapshot", route => route.fulfill({json: {...seed, connected: true, printers}}));
+      await page.goto(url);
+      await page.waitForFunction(() => document.querySelectorAll(".card").length === 6);
+      await page.evaluate(scale => { document.documentElement.style.fontSize = `${16 * scale}px`; }, scale);
+      for (const p of printers) {
+        const card = page.locator(`[data-id="${p.id}"]`), toggle = card.locator(".card-toggle");
+        assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+        assert.equal(await card.locator(".card-body").isVisible(), false);
+        assert.equal(await card.locator(".model").textContent(), p.model || "Unknown model");
+        assert.equal(await card.locator(".pill").isVisible(), true);
+        if (p.attention) assert.equal(await card.locator("[data-notices]").isVisible(), true);
+        if (p.id === "disclosure-4") assert.equal(await card.locator(".telemetry-note").isVisible(), true);
+        assert.ok(await toggle.evaluate(el => el.offsetWidth >= 44 && el.offsetHeight >= 44));
+        assert.ok(await toggle.evaluate(el => {
+          const card = el.closest(".card"), head = card.querySelector(".card-head");
+          const r = el.getBoundingClientRect(), c = card.getBoundingClientRect();
+          const icon = el.querySelector("svg").getBoundingClientRect();
+          return el === card.lastElementChild && r.top >= head.getBoundingClientRect().bottom &&
+            Math.abs((r.left + r.right) / 2 - (c.left + c.right) / 2) < 1 &&
+            icon.width === 12 && icon.height === 8;
+        }), "small chevron is centered in the card footer");
+        await toggle.focus();
+        await page.keyboard.press("Enter");
+        await page.waitForFunction(id => {
+          const el = document.querySelector(`[data-id="${id}"] .card-toggle`);
+          const r = el.getBoundingClientRect(), shell = document.querySelector(".shell").getBoundingClientRect();
+          const toolbar = document.querySelector(".toolbar").getBoundingClientRect();
+          const top = document.querySelector(".shell").classList.contains("toolbar-scrolls") ? shell.top : Math.max(shell.top, toolbar.bottom);
+          return document.activeElement === el && r.top >= Math.max(0, top) && r.bottom <= Math.min(innerHeight, shell.bottom);
+        }, p.id);
+        if (p.id === "disclosure-0" && process.env.SCREENSHOT_DIR) {
+          fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true});
+          await page.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `keyboard-disclosure-${width}x${height}-${scale}x.png`)});
+        }
+        assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+        assert.equal(await page.locator("#detail").evaluate(el => el.open), false);
+        assert.equal(await card.locator('[data-action="details"]').isVisible(), true);
+        assert.equal(await card.locator(".metrics").count() > 0, p.online);
+        await page.evaluate(() => poll());
+        assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+        assert.equal(await toggle.evaluate(el => el === document.activeElement), true);
+        await page.keyboard.press("Space");
+        assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+        await page.waitForFunction(id => {
+          const el = document.querySelector(`[data-id="${id}"] .card-toggle`);
+          const r = el.getBoundingClientRect(), shell = document.querySelector(".shell").getBoundingClientRect();
+          const toolbar = document.querySelector(".toolbar").getBoundingClientRect();
+          const top = document.querySelector(".shell").classList.contains("toolbar-scrolls") ? shell.top : Math.max(shell.top, toolbar.bottom);
+          return document.activeElement === el && r.top >= Math.max(0, top) && r.bottom <= Math.min(innerHeight, shell.bottom);
+        }, p.id);
+      }
+      const card = page.locator('[data-id="disclosure-0"]'), toggle = card.locator(".card-toggle");
+      await toggle.click();
+      await card.locator("img").evaluate(el => { window.disclosureImage = el; });
+      await page.locator("#sort").selectOption("state");
+      await page.evaluate(() => poll());
+      assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+      assert.equal(await card.locator("img").evaluate(el => el === window.disclosureImage && el.isConnected), true);
+      await page.locator("#search").fill("no match");
+      await page.locator("#search").fill("");
+      assert.equal(await toggle.getAttribute("aria-expanded"), "true", "filtering retains expansion by identity");
+      await toggle.focus();
+      await page.setViewportSize({width: 844, height: 390});
+      await page.waitForFunction(() => document.activeElement ===
+        document.querySelector('[data-id="disclosure-0"] [data-action="name"]'), null, {timeout: 5000});
+      await page.evaluate(() => poll());
+      assert.equal(await card.locator('[data-action="name"]').evaluate(el => el === document.activeElement), true,
+        "mobile footer focus transfers to the same printer name on desktop and survives polling");
+      assert.equal(await toggle.isVisible(), false);
+      assert.equal(await page.locator('[data-id="disclosure-1"] .job').isVisible(), true);
+      const collapsed = page.locator('[data-id="disclosure-1"]');
+      await collapsed.locator('[data-action="details"]').focus();
+      await page.setViewportSize({width, height});
+      await page.waitForFunction(() => document.activeElement ===
+        document.querySelector('[data-id="disclosure-1"] [data-action="name"]'), null, {timeout: 5000});
+      await page.evaluate(() => poll());
+      assert.equal(await collapsed.locator('[data-action="name"]').evaluate(el => el === document.activeElement), true,
+        "desktop Details focus transfers to the same printer name on a collapsed mobile card");
+      if (process.env.SCREENSHOT_DIR) {
+        await page.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `focus-after-resize-${width}x${height}-${scale}x.png`)});
+      }
+      // Controls that remain visible retain focus; unrelated controls are not reclaimed.
+      const details = card.locator('[data-action="details"]');
+      await details.focus();
+      await page.setViewportSize({width: 844, height: 390});
+      await page.setViewportSize({width, height});
+      assert.equal(await details.evaluate(el => el === document.activeElement), true,
+        "visible expanded-card Details retains focus across the breakpoint");
+      await page.locator("#search").focus();
+      await page.setViewportSize({width: 844, height: 390});
+      await page.setViewportSize({width, height});
+      assert.equal(await page.locator("#search").evaluate(el => el === document.activeElement), true,
+        "resizing does not steal focus from search");
+      assert.equal(await toggle.getAttribute("aria-expanded"), "true", "resize retains the mobile choice");
+      assert.equal(await page.locator('[data-id="disclosure-1"] .card-body').isVisible(), false);
+      await toggle.click();
+      await card.locator('[data-action="name"]').click();
+      assert.equal(await page.locator("#detail").evaluate(el => el.open), true, "collapsed name opens inspector");
+      await page.keyboard.press("Escape");
+      await page.locator('[data-id="disclosure-3"] [data-notices]').click();
+      assert.equal(await page.getByRole("tab", {name: "Notices", exact: true}).getAttribute("aria-selected"), "true");
+      await page.keyboard.press("Escape");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.close();
+      console.log(`PASS mobile disclosure states/poll/filter/sort/resize/keyboard ${width}x${height} ${scale}x`);
+    }
     // Approved study contracts exercised through actual controls on both layouts.
     for (const width of [1440, 390]) {
       const page = await browser.newPage({viewport: {width, height: 1000}, reducedMotion: "reduce"});
@@ -75,6 +190,7 @@ const {chromium} = require("playwright");
       await page.getByRole("button", {name: "Show all statuses", exact: true}).click();
       assert.equal(await page.locator("#search").inputValue(), "Alpha");
       assert.equal(await page.locator(mobile ? "#mobile-filter" : '[data-filter="all"]').evaluate(el => el === document.activeElement), true);
+      if (mobile) await page.locator(".card-toggle").click();
       const details = page.locator('[data-action="details"]').first();
       await page.setViewportSize({width, height: 568});
       await details.focus();
@@ -98,7 +214,7 @@ const {chromium} = require("playwright");
       await page.getByRole("button", {name: "Clear search", exact: true}).click();
       assert.equal(await page.locator("#search").evaluate(el => el === document.activeElement), true);
       await counts([3, 1, 2, 2, 0]);
-      for (const action of await page.locator(".card-actions button, .empty button").all()) {
+      for (const action of await page.locator(".card-actions button:visible, .empty button").all()) {
         assert.ok(await action.evaluate(el => el.getBoundingClientRect().height >= 44));
       }
       await page.close();

@@ -165,13 +165,17 @@ The **Notices** tab keeps reported conditions and local notice controls separate
 
 The [compact idle example](../../assets/screenshots/browser-idle.png) shows an A1 mini with No active print alongside printing and paused devices, without padding idle cards to printing height.
 
-The [scrolled desktop view](../../assets/screenshots/browser-scrolled.png) shows the compact header and pinned filter/search/sort toolbar at 1280 × 640. The toolbar also stays visible in the mobile offline-card view below.
+The [scrolled desktop view](../../assets/screenshots/browser-scrolled.png) shows the compact header and pinned filter/search/sort toolbar at 1280 × 640. The mobile offline-card view below shows the compact cards; the toolbar stays visible when scrolling reaches it.
 
 The [Appearance and notification settings](../../assets/screenshots/browser-themes.png) capture above shows the theme selector and Enable/Test/Disable controls with automatic browser notifications off. The [Idle filter](../../assets/screenshots/browser-idle-filter.png) and [mobile Status selector in Gruvbox Dark](../../assets/screenshots/browser-idle-filter-mobile.png) captures use a separate synthetic finished-printer scenario; it does not establish that a printer is physically ready.
 
-| Mobile overview | Mobile offline card after scrolling |
+On screens up to 760 CSS pixels wide, cards start collapsed to the name, model, image, and status. Use the small chevron in the card footer to expand or collapse inline readings; the choice stays with each printer during this page session, including filtering, sorting, updates, and resizing. Desktop shows full cards. Attention links and unavailable-data warnings remain visible when collapsed; the printer name still opens Overview. Keyboard expansion and collapse keep the focused footer in view. Resizing that hides the focused chevron or Details button moves focus to that printer’s name. If resizing hides the Details button while the inspector is open, closing returns focus to that printer’s name. Offline cards never add telemetry when expanded.
+
+[Expanded mobile card](../../assets/screenshots/browser-mobile-expanded.png) shows the inline readings.
+
+| Mobile overview | Mobile offline card |
 | --- | --- |
-| [![Browser overview at a 390 by 844 viewport](../../assets/screenshots/browser-mobile.png)](../../assets/screenshots/browser-mobile.png) | [![Focused offline printer card beneath the compact header and pinned mobile toolbar](../../assets/screenshots/browser-mobile-offline.png)](../../assets/screenshots/browser-mobile-offline.png) |
+| [![Browser overview at a 390 by 844 viewport](../../assets/screenshots/browser-mobile.png)](../../assets/screenshots/browser-mobile.png) | [![Focused offline printer card in the compact mobile overview](../../assets/screenshots/browser-mobile-offline.png)](../../assets/screenshots/browser-mobile-offline.png) |
 
 ### TUI Server Status
 
