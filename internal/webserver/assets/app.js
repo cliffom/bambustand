@@ -384,9 +384,11 @@ function revealDetailTab() {
     $("#detail-tab-" + detailTab).scrollIntoView?.({block: "nearest", inline: "nearest"});
 }
 function inspect(id, tab = "status") {
-  const opener = document.activeElement;
-  detailOpener = {element: opener, printer: opener?.dataset.open || opener?.dataset.id,
-    action: opener?.dataset.action};
+  if (!$("#detail").open) {
+    const opener = document.activeElement;
+    detailOpener = {element: opener, printer: opener?.dataset.open || opener?.dataset.id,
+      action: opener?.dataset.action};
+  }
   showHiddenMessages = false;
   selected = id;
   selectedSlot = null;

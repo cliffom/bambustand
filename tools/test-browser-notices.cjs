@@ -679,3 +679,17 @@ test("opening and reopening reveal the selected inspector tab after the dialog i
   assert.equal(view.run('$("#detail-tab-status").revealedWhileOpen'), true);
   assert.equal(view.run('detailTab'), "status");
 });
+
+test("notification re-entry retains the original opener until the inspector closes", () => {
+  const view = inspector();
+  view.focus("#search");
+  view.run('$("#detail").close(); inspect("printer")');
+  view.focus("#detail-tab-filament");
+  view.run('inspect("printer", "notices"); inspect("printer", "notices")');
+  assert.equal(view.run('detailOpener.element.id'), "search");
+  assert.equal(view.run('detailTab'), "notices");
+  view.run('$("#detail").close()');
+  view.focus("#sort");
+  view.run('inspect("printer")');
+  assert.equal(view.run('detailOpener.element.id'), "sort");
+});

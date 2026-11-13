@@ -77,20 +77,30 @@ const {chromium} = require("playwright");
       await closeInspector();
       // Card shape changes replace positional DOM children while the modal owns focus.
       for (const action of ["details", "name", "notices"]) {
-        Object.assign(printer, {state: "IDLE", idle_finished: true});
-        await page.evaluate(() => poll());
-        const opener = page.locator(`[data-action="${action}"]`);
-        await opener.click();
-        Object.assign(printer, {state: "RUNNING", idle_finished: false});
-        await page.evaluate(() => poll());
-        await closeInspector(action === "name");
-        assert.equal(await opener.evaluate(el => el === document.activeElement), true,
-          `${action}: close restores the same printer action after idle-to-running reconciliation`);
+        for (const reenter of [false, true]) {
+          Object.assign(printer, {state: "IDLE", idle_finished: true});
+          await page.evaluate(() => poll());
+          const opener = page.locator(`[data-action="${action}"]`);
+          await opener.click();
+          Object.assign(printer, {state: "RUNNING", idle_finished: false});
+          await page.evaluate(() => poll());
+          if (reenter) {
+            await page.evaluate(() => inspect("inspection", "notices"));
+            await assertSelectedTabVisible("Notices");
+            await page.getByRole("tab", {name: "Filament", exact: true}).focus();
+            await page.evaluate(() => inspect("inspection", "notices"));
+            await assertSelectedTabVisible("Notices");
+          }
+          await closeInspector(action === "name");
+          assert.equal(await opener.evaluate(el => el === document.activeElement), true,
+            `${action}: close restores the original action after card replacement${reenter ? " and repeated notification entry" : ""}`);
+        }
       }
       // If the original action disappears, return to the currently visible status control.
       await page.locator('[data-action="notices"]').click();
       printer.attention = false;
       await page.evaluate(() => poll());
+      await page.evaluate(() => inspect("inspection", "notices"));
       await closeInspector();
       assert.equal(await page.evaluate(() => document.activeElement === activeFilterControl()), true);
       Object.assign(printer, {state: "PAUSE", attention: true, idle_finished: false});
