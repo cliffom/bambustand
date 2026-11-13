@@ -31,6 +31,21 @@ const {chromium} = require("playwright");
       const mobile = width < 760;
       assert.equal(await page.locator(".filters").isVisible(), !mobile);
       assert.equal(await page.locator("#mobile-filter").isVisible(), mobile);
+      assert.equal(await page.getByRole("combobox", {name: "Status", exact: true}).count(), mobile ? 1 : 0);
+      if (mobile) {
+        assert.equal(await page.locator(".mobile-status > .sr-only").textContent(), "Status");
+        assert.equal(await page.locator(".mobile-status > .sr-only").evaluate(el => el.getBoundingClientRect().width), 1);
+        const bounds = await page.locator("#mobile-filter").evaluate(el => ({
+          left: el.getBoundingClientRect().left,
+          toolbar: el.closest(".toolbar").getBoundingClientRect().left,
+        }));
+        assert.ok(Math.abs(bounds.left - bounds.toolbar) < 1, "mobile status uses the full toolbar width");
+      } else {
+        assert.ok(await page.locator(".filters button").evaluateAll(buttons => buttons.every(el => {
+          const css = getComputedStyle(el);
+          return parseFloat(css.paddingLeft) >= 12 && parseFloat(css.paddingRight) >= 12;
+        })), "desktop tabs have horizontal breathing room");
+      }
       assert.equal(await page.locator(".summary, .attention-banner").count(), 0);
       assert.equal(await page.locator("#result-count").evaluate(el => el.getBoundingClientRect().height), 1);
       async function choose(choice) {

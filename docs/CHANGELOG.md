@@ -4,7 +4,7 @@ Release changes and upgrade notes are recorded below. Names and scope describe e
 
 ## 0.10.1
 
-- Shorten browser status tabs to All, Active and Idle, and separate desktop totals in circular badges. The mobile Status selector uses the same labels. Filter membership and search-aware counts are unchanged: Active means last reported running, and Idle includes currently available Idle or Finished printers without implying physical readiness. No configuration migration is required.
+- Shorten browser status tabs to All, Active and Idle, and separate desktop totals in circular badges. Desktop tabs have horizontal spacing, and the full-width mobile Status selector uses the same labels with an accessible, visually hidden label. Filter membership and search-aware counts are unchanged: Active means last reported running, and Idle includes currently available Idle or Finished printers without implying physical readiness. No configuration migration is required.
 
 ## 0.10.0
 

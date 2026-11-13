@@ -1342,7 +1342,7 @@ h1 { font-size: 1.5rem; }
 .fleet { margin-top: 20px; }
 .toolbar { border-bottom: 1px solid color-mix(in srgb, var(--border) 30%, transparent); gap: 8px 16px; margin-bottom: 20px; }
 .filters { border: 0; padding: 0; gap: 14px; border-radius: 0; }
-.filters button { position: relative; padding: 12px 0; min-height: 44px; white-space: nowrap; }
+.filters button { position: relative; padding: 12px 0.75rem; min-height: 44px; white-space: nowrap; }
 .filters .selected { color: var(--green); background: none; box-shadow: none; }
 .filters .selected::after { content: ""; position: absolute; bottom: -8px; left: 0; right: 0; height: 2px; background: var(--green); }
 .mobile-status { display: none; }
