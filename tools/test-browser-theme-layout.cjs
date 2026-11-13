@@ -15,7 +15,7 @@ const {chromium} = require("playwright");
     for (const [width, height, scale] of [[1280,800,1],[390,844,1],[320,568,2],[568,320,2]]) {
       const page = await browser.newPage({viewport: {width, height}});
       const errors = []; page.on("pageerror", error => errors.push(error.message));
-      const printers = seed.printers.map((p, i) => i ? {...p, fresh: false, online: false, connection: "Offline", attention: true, conditions: [{id: "theme-condition", text: "Synthetic intervention", guidance: "Inspect the printer", level: "warning"}]} : p);
+      const printers = Array.from({length: 12}, (_, i) => ({...seed.printers[i % seed.printers.length], id: `theme-printer-${i}`})).map((p, i) => i ? {...p, fresh: false, online: false, connection: "Offline", attention: true, conditions: [{id: "theme-condition", text: "Synthetic intervention", guidance: "Inspect the printer", level: "warning"}]} : p);
       await page.route("**/api/snapshot", route => route.fulfill({json: {...seed, at: new Date().toISOString(), printers,
         summary: {total: printers.length, printing: printers.filter(p => p.state === "RUNNING").length,
           attention: printers.filter(p => p.attention).length, unavailable: printers.filter(p => !p.fresh).length},
@@ -54,9 +54,13 @@ const {chromium} = require("playwright");
             const footer=getComputedStyle(document.querySelector("footer")), live=getComputedStyle(document.querySelector("#feed-state"));
             const warning=getComputedStyle(document.querySelector("[data-notices]"));
             const hint=getComputedStyle(document.querySelector("#settings-dialog .dialog-footer")), dialog=getComputedStyle(document.querySelector("#settings-dialog"));
-            return [ratio(body.color,body.backgroundColor), ratio(selected.color,body.backgroundColor), ratio(footer.color,footer.backgroundColor), ratio(live.color,footer.backgroundColor),ratio(warning.color,body.backgroundColor), ratio(hint.color,dialog.backgroundColor)];
+            return [ratio(body.color,body.backgroundColor), ratio(selected.color,body.backgroundColor), ratio(footer.color,footer.backgroundColor), ratio(live.color,footer.backgroundColor),ratio(warning.color,body.backgroundColor), ratio(hint.color,dialog.backgroundColor),
+              ...Array.from(document.querySelectorAll(".filters button > span"), el => {
+                const css = getComputedStyle(el);
+                return ratio(css.color,body.backgroundColor);
+              })];
           });
-          assert.ok(contrast.every(ratio => ratio >= 4.5), `${theme.id}: body, selection, footer and warning contrast ${contrast}`);
+          assert.ok(contrast.every(ratio => ratio >= 4.5), `${theme.id}: body, selection, footer, warning and count badge contrast ${contrast}`);
         }
         assert.equal(actual.overflow, false, `${theme.id} ${width}: settings reflows`);
         if (process.env.SCREENSHOT_DIR) {

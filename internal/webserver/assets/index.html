@@ -45,13 +45,13 @@
         <section class="fleet" aria-label="Printers">
           <div class="toolbar">
             <div class="filters" role="group" aria-label="Filter printers">
-              <button class="selected" data-filter="all" aria-pressed="true">All printers <span id="all-count">0</span></button
-              ><button data-filter="printing" aria-pressed="false">Printing <span id="printing-count">0</span></button
-              ><button data-filter="idle" aria-pressed="false" aria-describedby="idle-filter-help">Idle / finished <span id="idle-count">0</span></button
+              <button class="selected" data-filter="all" aria-pressed="true">All <span id="all-count">0</span></button
+              ><button data-filter="printing" aria-pressed="false">Active <span id="printing-count">0</span></button
+              ><button data-filter="idle" aria-pressed="false" aria-describedby="idle-filter-help">Idle <span id="idle-count">0</span></button
               ><button data-filter="attention" aria-pressed="false">Attention <span id="attention-count">0</span></button
               ><button data-filter="unavailable" aria-pressed="false">Unavailable <span id="unavailable-count">0</span></button>
             </div>
-            <label class="mobile-status">Status
+            <label class="mobile-status"><span class="sr-only">Status</span>
               <span class="sort-control">
                 <select id="mobile-filter" aria-describedby="idle-filter-help"></select>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false">
@@ -185,7 +185,7 @@
         The Filament tab shows per-unit reported drying status and remaining minutes. Missing values stay unknown; old readings are last-known. Drying settings describe configuration, and the original AMS has no active dryer. Monitoring cannot start or stop drying.
       </p>
       <p>
-        Filters and sorting preserve your printer selection as updates arrive. The Idle / finished filter includes only currently available online printers explicitly reporting Idle or Finished. Offline, stale, missing, and unknown states are excluded; a finished job does not establish that the build plate is clear. Search matches printer names and models. Each status count reflects that search independently of the selected status. On narrow screens, use the Status selector.
+        Filters and sorting preserve your printer selection as updates arrive. The Active filter includes printers last reported as running, independently of availability. The Idle filter includes only currently available online printers explicitly reporting Idle or Finished. Offline, stale, missing, and unknown states are excluded; a finished job does not establish that the build plate is clear. Search matches printer names and models. Each status count reflects that search independently of the selected status. On narrow screens, use the Status selector.
       </p>
       <p>
         Scrolling the farm compacts the header. The filter, search, and sort toolbar
