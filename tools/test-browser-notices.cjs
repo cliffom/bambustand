@@ -666,3 +666,16 @@ test("empty presence wins over retained material and quantity without changing a
   assert.equal(view.run('slotQuantity({present:true, remaining:0})'), "0% est.");
   assert.equal(view.run('slotQuantity({present:null, remaining:null})'), "Unknown");
 });
+
+test("opening and reopening reveal the selected inspector tab after the dialog is visible", () => {
+  const view = inspector();
+  view.run(`$("#detail").close();
+    for (const tab of detailTabs) $("#detail-tab-" + tab).scrollIntoView = function() {
+      this.revealedWhileOpen = $("#detail").open;
+    };
+    inspect("printer", "notices");`);
+  assert.equal(view.run('$("#detail-tab-notices").revealedWhileOpen'), true);
+  view.run('$("#detail").close(); inspect("printer")');
+  assert.equal(view.run('$("#detail-tab-status").revealedWhileOpen'), true);
+  assert.equal(view.run('detailTab'), "status");
+});

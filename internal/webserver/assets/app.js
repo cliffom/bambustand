@@ -376,14 +376,17 @@ function selectDetailTab(tab, focus = false) {
   body.setAttribute("aria-labelledby", "detail-tab-" + tab);
   renderDetail();
   body.scrollTop = detailScroll[tab] || 0;
-  if (focus) {
-    const button = $("#detail-tab-" + tab);
-    button.focus({preventScroll: true});
-    button.scrollIntoView?.({block: "nearest", inline: "nearest"});
-  }
+  if (focus) $("#detail-tab-" + tab).focus({preventScroll: true});
+  revealDetailTab();
+}
+function revealDetailTab() {
+  if ($("#detail").open)
+    $("#detail-tab-" + detailTab).scrollIntoView?.({block: "nearest", inline: "nearest"});
 }
 function inspect(id, tab = "status") {
-  detailOpener = document.activeElement;
+  const opener = document.activeElement;
+  detailOpener = {element: opener, printer: opener?.dataset.open || opener?.dataset.id,
+    action: opener?.dataset.action};
   showHiddenMessages = false;
   selected = id;
   selectedSlot = null;
@@ -394,6 +397,7 @@ function inspect(id, tab = "status") {
   $("#detail").showModal();
   $("#detail-body").scrollTop = 0;
   $("#detail").scrollTop = 0;
+  revealDetailTab();
 }
 function updateFeedWarning(message) {
   $("#feed-warning").hidden = !message;
@@ -534,8 +538,14 @@ $("#sort").addEventListener("change", (event) => {
   render();
 });
 $("#detail").addEventListener("close", () => {
-  if (detailOpener?.isConnected) detailOpener.focus({preventScroll: true});
-  else activeFilterControl()?.focus({preventScroll: true});
+  const opener = detailOpener;
+  const target = opener?.printer
+    ? document.querySelector(opener.action
+      ? `button[data-open="${CSS.escape(opener.printer)}"][data-action="${CSS.escape(opener.action)}"]`
+      : `.card[data-id="${CSS.escape(opener.printer)}"]`)
+    : opener?.element?.isConnected ? opener.element : null;
+  (target || activeFilterControl())?.focus({preventScroll: true});
+  detailOpener = null;
 });
 $("#close-detail").onclick = () => $("#detail").close();
 $("#settings").onclick = () => $("#settings-dialog").showModal();
