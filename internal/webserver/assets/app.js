@@ -631,6 +631,13 @@ function setupWorkspaceLayout() {
   // Reflow can change header, toolbar, and footer heights (including 200% text).
   const observer = new ResizeObserver(measure);
   for (const element of [shell, header, toolbar]) observer.observe(element);
+  // Responsive CSS can blur an action before the resize event runs.
+  shell.addEventListener("focusout", event => {
+    const action = event.target.closest("button[data-open]");
+    if (!action || event.relatedTarget || !action.isConnected || action.getClientRects().length) return;
+    const name = action.closest(".card")?.querySelector('[data-action="name"]');
+    if (name?.getClientRects().length) name.focus();
+  });
   shell.addEventListener("focusin", event => {
     const card = event.target.closest(".card");
     if (!card || restoringCardFocus) return;

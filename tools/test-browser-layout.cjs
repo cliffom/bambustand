@@ -86,10 +86,38 @@ const {chromium} = require("playwright");
       await page.locator("#search").fill("no match");
       await page.locator("#search").fill("");
       assert.equal(await toggle.getAttribute("aria-expanded"), "true", "filtering retains expansion by identity");
-      await page.setViewportSize({width: 1280, height: 844});
+      await toggle.focus();
+      await page.setViewportSize({width: 844, height: 390});
+      await page.waitForFunction(() => document.activeElement ===
+        document.querySelector('[data-id="disclosure-0"] [data-action="name"]'), null, {timeout: 5000});
+      await page.evaluate(() => poll());
+      assert.equal(await card.locator('[data-action="name"]').evaluate(el => el === document.activeElement), true,
+        "mobile footer focus transfers to the same printer name on desktop and survives polling");
       assert.equal(await toggle.isVisible(), false);
       assert.equal(await page.locator('[data-id="disclosure-1"] .job').isVisible(), true);
+      const collapsed = page.locator('[data-id="disclosure-1"]');
+      await collapsed.locator('[data-action="details"]').focus();
       await page.setViewportSize({width, height});
+      await page.waitForFunction(() => document.activeElement ===
+        document.querySelector('[data-id="disclosure-1"] [data-action="name"]'), null, {timeout: 5000});
+      await page.evaluate(() => poll());
+      assert.equal(await collapsed.locator('[data-action="name"]').evaluate(el => el === document.activeElement), true,
+        "desktop Details focus transfers to the same printer name on a collapsed mobile card");
+      if (process.env.SCREENSHOT_DIR) {
+        await page.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `focus-after-resize-${width}x${height}-${scale}x.png`)});
+      }
+      // Controls that remain visible retain focus; unrelated controls are not reclaimed.
+      const details = card.locator('[data-action="details"]');
+      await details.focus();
+      await page.setViewportSize({width: 844, height: 390});
+      await page.setViewportSize({width, height});
+      assert.equal(await details.evaluate(el => el === document.activeElement), true,
+        "visible expanded-card Details retains focus across the breakpoint");
+      await page.locator("#search").focus();
+      await page.setViewportSize({width: 844, height: 390});
+      await page.setViewportSize({width, height});
+      assert.equal(await page.locator("#search").evaluate(el => el === document.activeElement), true,
+        "resizing does not steal focus from search");
       assert.equal(await toggle.getAttribute("aria-expanded"), "true", "resize retains the mobile choice");
       assert.equal(await page.locator('[data-id="disclosure-1"] .card-body').isVisible(), false);
       await toggle.click();
