@@ -13,13 +13,13 @@ const {chromium} = require("playwright");
   assert.ok(seed.printers.length >= 2, "wait for the demo's initial printer reports");
   fs.mkdirSync(output, {recursive: true});
   const art = fs.readdirSync(path.join(__dirname, "../internal/webserver/assets/printers"))
-    .find(name => /^p1s-.*\.png$/.test(name));
+    .find(name => /^p1s-.*\.svg$/.test(name));
   assert.ok(art, "P1S illustration must exist");
   const browser = await chromium.launch({headless: true,
     ...(process.env.BROWSER_PATH ? {executablePath: process.env.BROWSER_PATH} : {})});
   const errors = [];
   try {
-    async function open(viewport = {width: 1280, height: 1200}, finished = false, canceled = false) {
+    async function open(viewport = {width: 1280, height: 1200}, finished = false, canceled = false, idleExample = false) {
       const page = await browser.newPage({viewport, locale: "en-US", timezoneId: "UTC"});
       page.on("pageerror", error => errors.push(error.message));
       await page.route("**/api/snapshot", route => {
@@ -44,6 +44,9 @@ const {chromium} = require("playwright");
         const third = {...structuredClone(first), id: "screenshot-p1s", name: "P1S · Spare", model: "P1S",
           image: `/printers/${art}`, online: false, fresh: false, connection: "Offline",
           attention: false, conditions: [], eta_current: false};
+        if (idleExample) Object.assign(third, {id: "screenshot-a1mini", name: "A1 mini · Desk", model: "A1 mini",
+          image: `/printers/${fs.readdirSync(path.join(__dirname, "../internal/webserver/assets/printers")).find(name => /^a1-mini-.*\.svg$/.test(name))}`,
+          online: true, fresh: true, connection: "Live", state: "IDLE", idle_finished: true, job: "", ams: [], external: []});
         const printers = [first, second, third];
         route.fulfill({json: {...seed, demo: true, connected: true, at, decisions: "session-only", printers,
           summary: {total: printers.length, printing: printers.filter(p => p.state === "RUNNING").length,
@@ -77,6 +80,9 @@ const {chromium} = require("playwright");
       await page.evaluate(() => { document.querySelector(".shell").scrollTop = 0; scrollTo(0, 0); });
       await page.locator("#settings").blur();
     }
+    const idleExample = await open({width: 1440, height: 1000}, false, false, true);
+    await shot(idleExample, "browser-idle.png");
+    await idleExample.close();
     const page = await open();
     assert.equal(await page.locator(".card.offline .metrics").count(), 0);
     assert.equal(await page.locator(".card").evaluateAll(cards => cards.some(card =>
@@ -119,6 +125,11 @@ const {chromium} = require("playwright");
     assert.equal(await idle.locator(".card").count(), 1);
     await shot(idle, "browser-idle-filter.png");
     await idle.close();
+    const mobileIdle = await open({width: 390, height: 844}, true);
+    await theme(mobileIdle, "gruvbox-dark");
+    await mobileIdle.locator("#mobile-filter").selectOption("idle");
+    await shot(mobileIdle, "browser-idle-filter-mobile.png");
+    await mobileIdle.close();
     const scrolled = await open({width: 1280, height: 640});
     await scrolled.locator(".shell").evaluate(el => {
       el.scrollTop = document.querySelector(".fleet").getBoundingClientRect().top - el.getBoundingClientRect().top;

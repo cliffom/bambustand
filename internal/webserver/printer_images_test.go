@@ -2,8 +2,8 @@ package webserver
 
 import (
 	"crypto/sha256"
+	"encoding/xml"
 	"fmt"
-	"image/png"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -51,7 +51,7 @@ func TestPrinterModelImagesAndUnknownFallback(t *testing.T) {
 	}
 }
 
-func TestPrinterSpritesAreEmbeddedTransparentAndCacheVersioned(t *testing.T) {
+func TestPrinterIllustrationsAreEmbeddedSVGAndCacheVersioned(t *testing.T) {
 	server := New(t.Context())
 	t.Cleanup(server.Close)
 	// Use the real fixed-path HTTP handler, without opening an extra listener.
@@ -64,20 +64,18 @@ func TestPrinterSpritesAreEmbeddedTransparentAndCacheVersioned(t *testing.T) {
 		request := httptest.NewRequest("GET", "http://127.0.0.1:12345"+path, nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
-		if response.Code != 200 || response.Header().Get("Content-Type") != "image/png" {
+		if response.Code != 200 || !strings.HasPrefix(response.Header().Get("Content-Type"), "image/svg+xml") {
 			t.Fatal(path, response.Code, response.Header())
 		}
 		if !strings.Contains(response.Header().Get("Cache-Control"), "immutable") {
 			t.Fatal("versioned art is not cached")
 		}
-		image, err := png.Decode(response.Body)
-		if err != nil {
-			t.Fatal(err)
+		var svg struct {
+			XMLName xml.Name
+			ViewBox string `xml:"viewBox,attr"`
 		}
-		bounds := image.Bounds()
-		_, _, _, alpha := image.At(bounds.Min.X, bounds.Min.Y).RGBA()
-		if bounds.Dx() < 1 || bounds.Dy() < 1 || alpha != 0 {
-			t.Fatal("missing dimensions or transparent padding", path)
+		if err := xml.Unmarshal(response.Body.Bytes(), &svg); err != nil || svg.XMLName.Local != "svg" || svg.ViewBox == "" {
+			t.Fatal("invalid SVG illustration", path, err)
 		}
 		data, err := assets.ReadFile("assets" + path)
 		if err != nil {

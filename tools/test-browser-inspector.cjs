@@ -11,7 +11,7 @@ const {chromium} = require("playwright");
   const browser = await chromium.launch({headless: true,
     ...(process.env.BROWSER_PATH ? {executablePath: process.env.BROWSER_PATH} : {})});
   try {
-    for (const [width, height, scale] of [[1280,800,1], [1920,1080,1], [390,844,1],
+    for (const [width, height, scale] of [[1440,1000,1], [1280,800,1], [1920,1080,1], [390,844,1],
       [320,568,1], [568,320,1], [1280,240,1], [320,568,2], [390,844,2],
       [780,844,2], [568,320,2], [1280,240,2]]) {
       const page = await browser.newPage({viewport: {width,height}});
@@ -46,6 +46,65 @@ const {chromium} = require("playwright");
       await page.goto(url);
       await page.evaluate(scale => { document.documentElement.style.fontSize = `${16 * scale}px`; }, scale);
       const card = page.locator('[data-id="inspection"]');
+      async function closeInspector(button = false) {
+        await page.evaluate(() => {
+          window.inspectorClosed = new Promise(resolve =>
+            document.querySelector("#detail").addEventListener("close", () => resolve(), {once: true}));
+        });
+        if (button) await page.locator("#close-detail").click();
+        else await page.keyboard.press("Escape");
+        await page.evaluate(() => window.inspectorClosed);
+      }
+      async function assertSelectedTabVisible(name) {
+        const tab = page.getByRole("tab", {name, exact: true});
+        assert.equal(await tab.getAttribute("aria-selected"), "true");
+        assert.ok(await tab.evaluate(el => {
+          const tab = el.getBoundingClientRect(), strip = el.parentElement.getBoundingClientRect();
+          return tab.left >= strip.left - 1 && tab.right <= strip.right + 1;
+        }), `${width}x${height} ${scale}x: opening reveals the selected ${name} tab`);
+      }
+      // Opening must reveal the selection without moving keyboard focus onto it.
+      await page.locator('[data-action="notices"]').click();
+      await assertSelectedTabVisible("Notices");
+      assert.equal(await page.getByRole("tab", {name: "Notices", exact: true}).evaluate(el => el === document.activeElement), false);
+      await closeInspector();
+      await page.locator('[data-action="details"]').click();
+      await assertSelectedTabVisible("Overview");
+      await closeInspector();
+      // Notification clicks use this same entry point; no OS permission/delivery is simulated.
+      await page.evaluate(() => inspect("inspection", "notices"));
+      await assertSelectedTabVisible("Notices");
+      await closeInspector();
+      // Card shape changes replace positional DOM children while the modal owns focus.
+      for (const action of ["details", "name", "notices"]) {
+        for (const reenter of [false, true]) {
+          Object.assign(printer, {state: "IDLE", idle_finished: true});
+          await page.evaluate(() => poll());
+          const opener = page.locator(`[data-action="${action}"]`);
+          await opener.click();
+          Object.assign(printer, {state: "RUNNING", idle_finished: false});
+          await page.evaluate(() => poll());
+          if (reenter) {
+            await page.evaluate(() => inspect("inspection", "notices"));
+            await assertSelectedTabVisible("Notices");
+            await page.getByRole("tab", {name: "Filament", exact: true}).focus();
+            await page.evaluate(() => inspect("inspection", "notices"));
+            await assertSelectedTabVisible("Notices");
+          }
+          await closeInspector(action === "name");
+          assert.equal(await opener.evaluate(el => el === document.activeElement), true,
+            `${action}: close restores the original action after card replacement${reenter ? " and repeated notification entry" : ""}`);
+        }
+      }
+      // If the original action disappears, return to the currently visible status control.
+      await page.locator('[data-action="notices"]').click();
+      printer.attention = false;
+      await page.evaluate(() => poll());
+      await page.evaluate(() => inspect("inspection", "notices"));
+      await closeInspector();
+      assert.equal(await page.evaluate(() => document.activeElement === activeFilterControl()), true);
+      Object.assign(printer, {state: "PAUSE", attention: true, idle_finished: false});
+      await page.evaluate(() => poll());
       await card.focus();
       await page.keyboard.press("Enter");
       const body = page.locator("#detail-body");
@@ -251,7 +310,7 @@ const {chromium} = require("playwright");
       assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Overview");
       assert.equal(await body.evaluate(el => el.scrollTop), 0);
       await page.keyboard.press("Escape");
-      await page.locator("#review").click();
+      await page.locator("[data-notices]").click();
       assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Notices");
       assert.deepEqual(errors, []);
       await page.close();

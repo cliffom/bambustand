@@ -12,7 +12,7 @@ Follow [historical record and planning rules](docs/development/documentation-dir
 
 ## Development
 
-Use Go 1.27.3 or newer, Git, and Make. Run commands from the repository root. Start with [contributing](docs/development/contributing.md) for tool versions and setup.
+Use Go 1.27.4 or newer, Git, and Make. Run commands from the repository root. Start with [contributing](docs/development/contributing.md) for tool versions and setup.
 
 - `make demo` builds and runs a synthetic farm without credentials or hardware.
 - `make fmt-check lint test check build` checks Go formatting, lint, race tests, vet, and the native build. Use `make fmt` to format Go changes.

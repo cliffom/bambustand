@@ -27,6 +27,7 @@ const detailTabs = ["status", "filament", "notices"];
 let detailTab = "status", detailScroll = {};
 let selectedSlot = null, readingExpanded = false, detailIdentity = "";
 let restoringCardFocus = false;
+let detailOpener = null;
 let csrfToken = null;
 let snapshot = null,
   filter = "all",
@@ -90,15 +91,16 @@ function matchesFilter(p, choice) {
     (choice === "attention" && p.attention) ||
     (choice === "unavailable" && !p.fresh);
 }
+const matchesSearch = p => `${p.name} ${p.model || ""}`.toLowerCase().includes(query.trim().toLowerCase());
 function filterCount(choice) {
-  return (snapshot?.printers || []).filter(p => matchesFilter(p, choice)).length;
+  return (snapshot?.printers || []).filter(p => matchesSearch(p) && matchesFilter(p, choice)).length;
 }
 function visible() {
   return (snapshot?.printers || [])
     .filter(
       (p) =>
         matchesFilter(p, filter) &&
-        p.name.toLowerCase().includes(query.toLowerCase()),
+        matchesSearch(p),
     )
     .sort((a, b) => {
       const group = printerGroup(a) - printerGroup(b);
@@ -121,21 +123,18 @@ function machine(p) {
 function card(p) {
   const offline = p.online === false;
   const label = offline ? "Offline" : status(p);
-  const heading = `<div class="card-head"><div><h3>${escapeHTML(p.name)}</h3><span class="model">${escapeHTML(p.model || "Unknown model")}</span></div><span class="pill ${p.attention || !current(p) ? "warn" : p.state === "IDLE" ? "neutral" : ""}">${escapeHTML(label)}</span></div><div class="printer-view">${machine(p)}</div>`;
-  const attention = p.attention ? '<p class="card-note">◇ Attention · unreviewed conditions</p>' : "";
-  const opening = `<button class="card ${p.attention ? "warning" : ""}${offline ? " offline" : ""}" data-id="${escapeHTML(p.id)}" aria-label="Inspect ${escapeHTML(p.name)}, ${escapeHTML(label)}">`;
-  if (offline) return `${opening}${heading}${attention}</button>`;
+  const action = (text, kind = "name") => `<button data-action="${kind}" data-open="${escapeHTML(p.id)}" aria-haspopup="dialog"${kind === "notices" ? ' data-notices="true"' : ''}>${text}</button>`;
+  const heading = `<div class="card-head"><div class="card-identity"><h3>${action(escapeHTML(p.name))}</h3><div class="model">${escapeHTML(p.model || "Unknown model")}</div><span class="pill ${p.attention || !current(p) ? "warn" : p.state === "IDLE" ? "neutral" : ""}">${escapeHTML(label)}</span></div><div class="printer-view">${machine(p)}</div></div>`;
+  const actions = `<div class="card-actions">${p.attention ? action('◇ Attention · view notices', 'notices') : `<span>${p.conditions.some(condition => !condition.hidden) ? 'Reported notices' : 'No active notices'}</span>`}${action('Details ↗', 'details')}</div>`;
+  const opening = `<article class="card ${p.attention ? "warning" : ""}${offline ? " offline" : ""}" data-id="${escapeHTML(p.id)}" tabindex="-1" aria-label="Inspect ${escapeHTML(p.name)}, ${escapeHTML(label)}">`;
+  if (offline) return `${opening}${heading}${actions}</article>`;
   const slots = allSlots(p).filter((s) => s.present !== false),
     nozzle = p.nozzles.find((n) => n.active) || p.nozzles[0];
-  const progress = Number.isFinite(p.progress)
-    ? Math.max(0, Math.min(100, p.progress))
-    : null;
-  return `${opening}${heading}${!current(p) ? '<p class="card-note telemetry-note">Current state unconfirmed · readings are last-known; missing values remain unknown.</p>' : ""}<div class="job">${escapeHTML(p.job || "No reported job")}</div><div class="progress-label"><span>Reported progress</span><strong>${progress === null ? "Unknown" : progress + "%"}</strong></div><div class="progress-track"><span style="width:${progress || 0}%"></span></div><div class="metrics"><div>Finish estimate<strong>${escapeHTML(remaining(p))}</strong></div><div>Nozzle<strong>${temperature(nozzle?.temperature)}</strong></div><div>Bed<strong>${temperature(p.bed)}</strong></div></div><div class="card-bottom"><div class="swatches">${slots
-    .slice(0, 4)
-    .map((s) => swatch(s.color))
-    .join(
-      "",
-    )}<span>${escapeHTML(slots[0]?.material || "Unknown material")}</span></div><span>${current(p) ? '<i class="green"></i>Fresh' : "◷ Last-known"}</span></div>${attention}</button>`;
+  const progress = Number.isFinite(p.progress) ? Math.max(0, Math.min(100, p.progress)) : null;
+  const idle = p.state === "IDLE";
+  const finish = p.state === "RUNNING" && p.remaining != null && Number.isFinite(Date.parse(p.remaining_reported))
+    ? new Date(Date.parse(p.remaining_reported) + p.remaining * 60000).toLocaleTimeString(undefined, {hour: "numeric", minute: "2-digit"}) : "Unavailable";
+  return `${opening}${heading}${!current(p) ? '<p class="card-note telemetry-note">Current state unconfirmed · readings are last-known; missing values remain unknown.</p>' : ""}<div class="job">${idle ? "No active print" : escapeHTML(p.job || "No reported job")}</div>${idle ? "" : `<div class="progress-label"><span>Reported progress</span><strong>${progress === null ? "Unknown" : progress + "%"}</strong></div><div class="progress-track"><span style="width:${progress || 0}%"></span></div><div class="metrics timing"><div>Remaining<strong>${escapeHTML(remaining(p))}</strong></div><div>Est. finish<strong>${finish !== "Unavailable" && (!current(p) || !p.eta_current) ? "Last-known: " : ""}${escapeHTML(finish)}</strong></div></div>`}<div class="metrics"><div>Nozzle<strong>${temperature(nozzle?.temperature)}</strong></div><div>Bed<strong>${temperature(p.bed)}</strong></div></div><div class="card-bottom"><div class="swatches">${slots.slice(0, 4).map(s => swatch(s.color)).join("")}<span>${escapeHTML(slots[0]?.material || "Unknown material")}</span></div><span>${current(p) ? '<i class="green"></i>Fresh' : "◷ Last-known"}</span></div>${actions}</article>`;
 }
 // Keep connected card/image elements across polls. Replacing #cards.innerHTML
 // recreates lazy, async-decoded images even when their immutable URL is unchanged.
@@ -163,7 +162,7 @@ function patchCardNode(current, next) {
 function renderCards(list) {
   const container = $("#cards");
   if (!list.length) {
-    container.innerHTML = `<div class="empty">${snapshot?.printers.length ? "No printers match this view." : "No discovered printers yet."}<button id="reset">Reset to all printers</button></div>`;
+    container.innerHTML = `<div class="empty"><h2>${snapshot?.printers.length ? "No matching printers" : "No discovered printers yet"}</h2><p>${query.trim() ? `No printers in this status match “${escapeHTML(query.trim())}”.` : "No printers are in this status."}</p>${query.trim() ? '<button data-recovery="search">Clear search</button>' : ""}${filter !== "all" ? '<button data-recovery="filter">Show all statuses</button>' : ""}</div>`;
     return;
   }
   const ids = new Set(list.map((printer) => printer.id));
@@ -188,11 +187,13 @@ function renderCards(list) {
 }
 function render() {
   const list = visible(),
-    focused = document.activeElement?.dataset.id;
+    focused = document.activeElement?.dataset.open || document.activeElement?.dataset.id,
+    focusedAction = document.activeElement?.dataset.action,
+    focusedCard = document.activeElement?.classList.contains("card");
   renderCards(list);
   if (focused) {
-    const target = document.querySelector(`[data-id="${CSS.escape(focused)}"]`)
-      || document.querySelector(`.filters [data-filter="${filter}"]`);
+    const target = (focusedCard ? document.querySelector(`.card[data-id="${CSS.escape(focused)}"]`) : document.querySelector(`button[data-open="${CSS.escape(focused)}"]${focusedAction ? `[data-action="${focusedAction}"]` : ""}`))
+      || activeFilterControl();
     // Moving a card can drop DOM focus. Restoring it is not navigation and
     // must not invoke the workspace's focused-card scroll clearance.
     restoringCardFocus = true;
@@ -213,17 +214,14 @@ function render() {
     b.setAttribute("aria-pressed", String(b.dataset.filter === filter));
   });
   if (!snapshot) return;
-  for (const key of ["total", "printing", "attention", "unavailable"])
-    $("#" + key).textContent = String(snapshot.summary[key] || 0).padStart(
-      2,
-      "0",
-    );
   for (const choice of ["all", "printing", "idle", "attention", "unavailable"])
     $("#" + choice + "-count").textContent = filterCount(choice);
+  const selector = $("#mobile-filter");
+  const options = Array.from(document.querySelectorAll(".filters button")).map(button =>
+    `<option value="${button.dataset.filter}">${escapeHTML(button.textContent.trim())}</option>`).join("");
+  if (selector.innerHTML !== options) selector.innerHTML = options;
+  selector.value = filter;
   $("#idle-filter-help").hidden = filter !== "idle";
-  $(".attention-banner").hidden = !snapshot.summary.attention;
-  $("#attention-text").textContent =
-    `${snapshot.summary.attention} printer(s) have unreviewed actionable conditions. Physical resolution is unconfirmed.`;
   $("#feed-state").textContent = feedUnavailable()
     ? "Dashboard disconnected"
     : snapshot.demo
@@ -235,7 +233,7 @@ function render() {
     "amber",
     feedUnavailable() || !snapshot.connected,
   );
-  $("#updated").textContent = localTime(snapshot.at);
+  $("#updated").textContent = new Date(snapshot.at).toLocaleTimeString();
   if (selected && $("#detail").open) renderDetail();
 }
 // Slot identity includes inventory family and unit, never array position.
@@ -379,8 +377,18 @@ function selectDetailTab(tab, focus = false) {
   renderDetail();
   body.scrollTop = detailScroll[tab] || 0;
   if (focus) $("#detail-tab-" + tab).focus({preventScroll: true});
+  revealDetailTab();
+}
+function revealDetailTab() {
+  if ($("#detail").open)
+    $("#detail-tab-" + detailTab).scrollIntoView?.({block: "nearest", inline: "nearest"});
 }
 function inspect(id, tab = "status") {
+  if (!$("#detail").open) {
+    const opener = document.activeElement;
+    detailOpener = {element: opener, printer: opener?.dataset.open || opener?.dataset.id,
+      action: opener?.dataset.action};
+  }
   showHiddenMessages = false;
   selected = id;
   selectedSlot = null;
@@ -391,6 +399,7 @@ function inspect(id, tab = "status") {
   $("#detail").showModal();
   $("#detail-body").scrollTop = 0;
   $("#detail").scrollTop = 0;
+  revealDetailTab();
 }
 function updateFeedWarning(message) {
   $("#feed-warning").hidden = !message;
@@ -470,6 +479,7 @@ async function dismissNotice(target, retry) {
   }
 }
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && event.target.matches?.(".card")) { inspect(event.target.dataset.id); return; }
   const tab = event.target.closest("[data-detail-tab]");
   if (!tab) return;
   const index = detailTabs.indexOf(tab.dataset.detailTab);
@@ -502,20 +512,25 @@ document.addEventListener("click", (event) => {
     render();
   }
   const card = event.target.closest("[data-id]");
-  if (card) inspect(card.dataset.id);
-  if (event.target.id === "reset") {
-    filter = "all";
-    query = "";
-    sort = "name";
-    $("#search").value = "";
-    $("#sort").value = "name";
+  if (card) inspect(card.dataset.id, event.target.closest("[data-notices]") ? "notices" : "status");
+  const recovery = event.target.closest("[data-recovery]");
+  if (recovery) {
+    if (recovery.dataset.recovery === "search") {
+      query = "";
+      $("#search").value = "";
+    } else filter = "all";
     render();
+    (recovery.dataset.recovery === "search" ? $("#search") : activeFilterControl())?.focus();
   }
 });
 document.addEventListener("toggle", (event) => {
   if (event.target.id === "reading-details" && event.target.isConnected)
     readingExpanded = event.target.open;
 }, true);
+function activeFilterControl() {
+  return getComputedStyle($(".mobile-status")).display !== "none" ? $("#mobile-filter") : document.querySelector(`.filters [data-filter="${filter}"]`);
+}
+$("#mobile-filter").addEventListener("change", event => { filter = event.target.value; render(); });
 $("#search").addEventListener("input", (event) => {
   query = event.target.value;
   render();
@@ -524,10 +539,16 @@ $("#sort").addEventListener("change", (event) => {
   sort = event.target.value;
   render();
 });
-$("#review").onclick = () => {
-  const p = snapshot?.printers.find((p) => p.attention);
-  if (p) inspect(p.id, "notices");
-};
+$("#detail").addEventListener("close", () => {
+  const opener = detailOpener;
+  const target = opener?.printer
+    ? document.querySelector(opener.action
+      ? `button[data-open="${CSS.escape(opener.printer)}"][data-action="${CSS.escape(opener.action)}"]`
+      : `.card[data-id="${CSS.escape(opener.printer)}"]`)
+    : opener?.element?.isConnected ? opener.element : null;
+  (target || activeFilterControl())?.focus({preventScroll: true});
+  detailOpener = null;
+});
 $("#close-detail").onclick = () => $("#detail").close();
 $("#settings").onclick = () => $("#settings-dialog").showModal();
 $("#close-settings").onclick = () => $("#settings-dialog").close();
@@ -581,10 +602,10 @@ function setupWorkspaceLayout() {
     const card = event.target.closest(".card");
     if (!card || restoringCardFocus) return;
     requestAnimationFrame(() => {
-      if (document.activeElement !== card || shell.classList.contains("toolbar-scrolls")) return;
+      if (!card.contains(document.activeElement) || shell.classList.contains("toolbar-scrolls")) return;
       const top = shell.getBoundingClientRect().top + toolbar.getBoundingClientRect().height + 8;
-      const cardTop = card.getBoundingClientRect().top;
-      if (cardTop < top) shell.scrollTop += cardTop - top;
+      const focusedTop = document.activeElement.getBoundingClientRect().top;
+      if (focusedTop < top) shell.scrollTop += focusedTop - top;
     });
   });
   measure();

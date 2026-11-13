@@ -16,9 +16,77 @@ const {chromium} = require("playwright");
     ...(process.env.BROWSER_PATH ? {executablePath: process.env.BROWSER_PATH} : {}),
   });
   try {
+    // Approved study contracts exercised through actual controls on both layouts.
+    for (const width of [1440, 390]) {
+      const page = await browser.newPage({viewport: {width, height: 1000}, reducedMotion: "reduce"});
+      const printers = [
+        {...seed.printers[0], id: "compact-a", name: "Alpha", model: "H2D", state: "RUNNING", fresh: true, online: true, attention: true, idle_finished: false},
+        {...seed.printers[0], id: "compact-b", name: "Beta", model: "H2D", state: "IDLE", fresh: true, online: true, attention: false, idle_finished: true},
+        {...seed.printers[0], id: "compact-c", name: "Gamma", model: "X2D", state: "FINISH", fresh: true, online: true, attention: true, idle_finished: true},
+      ];
+      await page.route("**/api/snapshot", route => route.fulfill({json: {...seed, at: new Date().toISOString(), connected: true,
+        printers, summary: {total: 3, printing: 1, attention: 2, unavailable: 0}}}));
+      await page.goto(url);
+      await page.waitForFunction(() => document.querySelectorAll(".card").length === 3);
+      const mobile = width < 760;
+      assert.equal(await page.locator(".filters").isVisible(), !mobile);
+      assert.equal(await page.locator("#mobile-filter").isVisible(), mobile);
+      assert.equal(await page.locator(".summary, .attention-banner").count(), 0);
+      assert.equal(await page.locator("#result-count").evaluate(el => el.getBoundingClientRect().height), 1);
+      async function choose(choice) {
+        if (mobile) await page.locator("#mobile-filter").selectOption(choice);
+        else await page.locator(`[data-filter="${choice}"]`).click();
+      }
+      async function counts(expected) {
+        for (const [i, choice] of ["all", "printing", "idle", "attention", "unavailable"].entries()) {
+          assert.equal(await page.locator(`#${choice}-count`).textContent(), String(expected[i]));
+          assert.match(await page.locator(`#mobile-filter option[value="${choice}"]`).textContent(), new RegExp(` ${expected[i]}$`));
+        }
+      }
+      await counts([3, 1, 2, 2, 0]);
+      await page.locator("#search").fill("h2d");
+      await counts([2, 1, 1, 1, 0]);
+      await choose("idle");
+      await counts([2, 1, 1, 1, 0]);
+      assert.equal(await page.locator(".card .job").textContent(), "No active print");
+      assert.equal(await page.locator(".card .progress-track").count(), 0);
+      await page.locator("#search").fill("Alpha");
+      assert.equal(await page.locator(".card").count(), 0);
+      await page.getByRole("button", {name: "Show all statuses", exact: true}).click();
+      assert.equal(await page.locator("#search").inputValue(), "Alpha");
+      assert.equal(await page.locator(mobile ? "#mobile-filter" : '[data-filter="all"]').evaluate(el => el === document.activeElement), true);
+      const details = page.locator('[data-action="details"]').first();
+      await page.setViewportSize({width, height: 568});
+      await details.focus();
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      assert.ok(await details.evaluate(el => {
+        const r = el.getBoundingClientRect(), shell = document.querySelector(".shell").getBoundingClientRect();
+        return r.top >= shell.top && r.bottom <= shell.bottom;
+      }), "focused Details remains visible even when its card exceeds the workspace height");
+      await details.click();
+      assert.equal(await page.getByRole("tab", {name: "Overview", exact: true}).getAttribute("aria-selected"), "true");
+      await page.keyboard.press("Escape");
+      assert.equal(await details.evaluate(el => el === document.activeElement), true);
+      await page.evaluate(() => poll());
+      assert.equal(await details.evaluate(el => el === document.activeElement), true, "poll preserves Details action focus");
+      await page.locator("[data-notices]").click();
+      assert.equal(await page.getByRole("tab", {name: "Notices", exact: true}).getAttribute("aria-selected"), "true");
+      await page.keyboard.press("Escape");
+      await page.evaluate(() => poll());
+      assert.equal(await page.locator("[data-notices]").evaluate(el => el === document.activeElement), true);
+      await page.locator("#search").fill("no matches");
+      await page.getByRole("button", {name: "Clear search", exact: true}).click();
+      assert.equal(await page.locator("#search").evaluate(el => el === document.activeElement), true);
+      await counts([3, 1, 2, 2, 0]);
+      for (const action of await page.locator(".card-actions button, .empty button").all()) {
+        assert.ok(await action.evaluate(el => el.getBoundingClientRect().height >= 44));
+      }
+      await page.close();
+      console.log(`PASS compact search/status/recovery/entry/focus/reduced-motion ${width}px`);
+    }
     for (const [width, height, scale] of [
       [320, 568, 2], [568, 320, 1], [568, 320, 2], [1280, 240, 1],
-      [1920, 1080, 1], [1280, 800, 1], [390, 844, 1],
+      [1440, 1000, 1], [1920, 1080, 1], [1280, 800, 1], [390, 844, 1],
       [320, 568, 1], [780, 844, 2], [390, 844, 2],
       [1280, 240, 2],
     ]) {
@@ -62,6 +130,10 @@ const {chromium} = require("playwright");
           document.querySelectorAll(".card").length === count &&
           document.querySelector("#result-count").textContent === `${count} ${count === 1 ? "printer" : "printers"}`, count,
           {timeout: 10000});
+        async function chooseFilter(choice) {
+          if (await page.locator("#mobile-filter").isVisible()) await page.locator("#mobile-filter").selectOption(choice);
+          else await page.locator(`[data-filter="${choice}"]`).click();
+        }
         const repo = page.getByRole("link", {name: "BambuStand on GitHub (opens in a new tab)", exact: true});
         assert.equal(await repo.getAttribute("href"), "https://github.com/cliffom/bambustand");
         assert.equal(await page.locator("#clock").count(), 0);
@@ -91,7 +163,7 @@ const {chromium} = require("playwright");
               repoVisible: document.querySelector(".footer-repo").getBoundingClientRect().bottom <= innerHeight,
               repoRight: document.querySelector(".footer-repo").getBoundingClientRect().right,
               footerPadding: parseFloat(border.paddingRight),
-              resultBottom: document.querySelector("#result-count").getBoundingClientRect().bottom,
+              resultBottom: document.querySelector("#cards").getBoundingClientRect().bottom,
             };
           });
           assert.ok(bounds.workspaceHeight >= bounds.minimumWorkspace - 1,
@@ -128,14 +200,14 @@ const {chromium} = require("playwright");
               el.scrollTop = el.scrollHeight - el.clientHeight - distance;
               return {
                 scroll: el.scrollTop,
-                resultTop: document.querySelector("#result-count").getBoundingClientRect().top,
+                resultTop: document.querySelector("#cards").getBoundingClientRect().top,
                 pageFits: document.documentElement.scrollHeight <= innerHeight + 1,
               };
             }, distanceFromBottom);
             await settleLayout();
             assert.equal(await page.locator(".shell").evaluate(el => el.scrollTop), beforeCollapse.scroll,
               `first scroll ${distanceFromBottom}px from bottom survives intermediate header measurement`);
-            assert.ok(Math.abs(await page.locator("#result-count").evaluate(el => el.getBoundingClientRect().top) -
+            assert.ok(Math.abs(await page.locator("#cards").evaluate(el => el.getBoundingClientRect().top) -
               beforeCollapse.resultTop) < 1, "collapse near the bottom keeps visible content steady");
             if (beforeCollapse.pageFits) {
               assert.ok(Math.abs(await page.locator(".shell").evaluate(el => el.scrollHeight - el.clientHeight - el.scrollTop) -
@@ -158,14 +230,14 @@ const {chromium} = require("playwright");
                   el.scrollTop = end ? el.scrollHeight - el.clientHeight : 48;
                   return {
                     page: scrollY, combined: scrollY + el.scrollTop,
-                    resultTop: document.querySelector("#result-count").getBoundingClientRect().top,
+                    resultTop: document.querySelector("#cards").getBoundingClientRect().top,
                   };
                 }, workspaceEnd);
                 assert.ok(beforeCollapse.page > 0, "outer page is scrolled before the header collapses");
                 await settleLayout();
                 const afterCollapse = await page.locator(".shell").evaluate(el => ({
                   combined: scrollY + el.scrollTop,
-                  resultTop: document.querySelector("#result-count").getBoundingClientRect().top,
+                  resultTop: document.querySelector("#cards").getBoundingClientRect().top,
                 }));
                 assert.ok(Math.abs(afterCollapse.combined - beforeCollapse.combined) <= 1,
                   `collapse with page ${pageFraction * 100}% scrolled preserves the combined page/workspace offset`);
@@ -175,14 +247,14 @@ const {chromium} = require("playwright");
                   el.scrollTop = 12;
                   return {
                     combined: scrollY + el.scrollTop,
-                    resultTop: document.querySelector("#result-count").getBoundingClientRect().top,
+                    resultTop: document.querySelector("#cards").getBoundingClientRect().top,
                   };
                 });
                 await settleLayout();
                 assert.equal(await page.locator("header.compact").count(), 0);
                 assert.ok(await page.locator(".shell").evaluate((el, before) =>
                   Math.abs(scrollY + el.scrollTop - before.combined) <= 1 &&
-                  Math.abs(document.querySelector("#result-count").getBoundingClientRect().top - before.resultTop) <= 1,
+                  Math.abs(document.querySelector("#cards").getBoundingClientRect().top - before.resultTop) <= 1,
                 beforeExpand), "expanding the header preserves combined offset and content position");
               }
             }
@@ -203,8 +275,8 @@ const {chromium} = require("playwright");
           assert.ok(Math.abs(await page.locator(".shell").evaluate(el => el.scrollHeight - el.clientHeight + document.documentElement.scrollHeight - innerHeight) - range) < 1,
             "collapse preserves scroll range");
           assert.ok(await page.locator(".toolbar").evaluate(el =>
-            el.getBoundingClientRect().top > document.querySelector(".shell").getBoundingClientRect().top),
-            "toolbar remains in flow before reaching the header");
+            el.getBoundingClientRect().top >= document.querySelector(".shell").getBoundingClientRect().top),
+            "toolbar has reached the compact header or remains in flow");
           await page.locator(".shell").evaluate(el => { el.scrollTop = 900; });
           await settleLayout();
           const pinned = await page.locator(".shell").evaluate(el => !el.classList.contains("toolbar-scrolls"));
@@ -337,7 +409,7 @@ const {chromium} = require("playwright");
             "restoring the printer state also preserves the scrolled viewport");
           await page.keyboard.press("Tab");
           await settleLayout();
-          assert.ok(await page.evaluate(() => document.activeElement.classList.contains("card") &&
+          assert.ok(await page.evaluate(() => document.activeElement.closest(".card") &&
             document.activeElement.getBoundingClientRect().top >= document.querySelector(".toolbar").getBoundingClientRect().bottom),
             "subsequent keyboard navigation still brings the card clear of the pinned toolbar");
           for (let i = 0; i < printers.length; i++) Object.assign(printers[i], mixedPrinters[i]);
@@ -352,14 +424,18 @@ const {chromium} = require("playwright");
           "connection/demo status lives on the left of the footer");
         assert.equal(await page.locator("header #feed-state, .readonly, .brand small").count(), 0);
         assert.match(await page.locator("#feed-state").textContent(), /Demo/);
-        assert.ok(await page.locator(".tools .sort-control").evaluate(el => {
-          const select = el.querySelector("select"), icon = el.querySelector("svg");
-          const box = select.getBoundingClientRect(), arrow = icon.getBoundingClientRect();
-          return arrow.left > box.left && arrow.right < box.right - arrow.width / 2 &&
-            Math.abs((arrow.top + arrow.bottom) / 2 - (box.top + box.bottom) / 2) < 1 &&
-            parseFloat(getComputedStyle(select).paddingInlineEnd) >= arrow.width * 2 &&
-            getComputedStyle(icon).pointerEvents === "none";
-        }), "sort chevron is centered and inset with reserved text space");
+        const selectControls = [".tools .sort-control"];
+        if (await page.locator(".mobile-status").isVisible()) selectControls.push(".mobile-status .sort-control");
+        for (const selector of selectControls) {
+          assert.ok(await page.locator(selector).evaluate(el => {
+            const select = el.querySelector("select"), icon = el.querySelector("svg");
+            const box = select.getBoundingClientRect(), arrow = icon.getBoundingClientRect();
+            return arrow.left > box.left && arrow.right < box.right - arrow.width / 2 &&
+              Math.abs((arrow.top + arrow.bottom) / 2 - (box.top + box.bottom) / 2) < 1 &&
+              parseFloat(getComputedStyle(select).paddingInlineEnd) >= arrow.width * 2 &&
+              getComputedStyle(icon).pointerEvents === "none";
+          }), `${selector}: chevron is centered and inset with reserved text space`);
+        }
         for (const printer of printers.filter(p => !p.online)) {
           const card = page.locator(`[data-id="${printer.id}"]`);
           assert.equal(await card.locator(".job, .progress-label, .progress-track, .metrics, .card-bottom, .telemetry-note").count(), 0);
@@ -409,7 +485,7 @@ const {chromium} = require("playwright");
         const idle = page.locator('[data-filter="idle"]');
         const idleCount = printers.filter(p => p.idle_finished).length;
         assert.equal(await page.locator("#idle-count").textContent(), String(idleCount));
-        await idle.click();
+        await chooseFilter("idle");
         assert.equal(await idle.getAttribute("aria-pressed"), "true");
         assert.equal(await page.locator(".card").count(), idleCount);
         assert.equal(await page.locator("#result-count").textContent(),
@@ -454,7 +530,7 @@ const {chromium} = require("playwright");
           await page.screenshot({fullPage: true, path: path.join(process.env.SCREENSHOT_DIR,
             `idle-${width}-${height}-${scale}x-${count}.png`)});
         }
-        await page.locator('[data-filter="all"]').click();
+        await chooseFilter("all");
         assert.equal(await page.locator(".card").count(), count);
         // Scroll the actual browser container to its end without smooth-scroll timing.
         await page.locator(".shell").evaluate(el => { el.scrollTop = el.scrollHeight; });
