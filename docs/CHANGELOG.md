@@ -4,6 +4,8 @@ Release changes and upgrade notes are recorded below. Names and scope describe e
 
 ## 0.10.0
 
+- Source builds require Go 1.27.4 or newer, addressing the standard-library vulnerability GO-2026-6859 reported by the release scan.
+
 - Compact browser farm overview with search-aware status counts, a mobile Status selector, name/model search, and query/status recovery actions. Routine snapshot metadata now lives in the persistent footer.
 - Top-aligned front-view printer illustrations and shorter idle/offline cards. Details and printer names open Overview; separate attention actions open Notices.
 - Responsive inspector controls keep tabs in a single scrollable row and give job text more room at narrow widths and enlarged text. Existing filament inspection, local notice decisions, themes and notification policy remain in place. No configuration migration is required.

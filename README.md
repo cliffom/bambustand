@@ -133,7 +133,7 @@ In the TUI, press `,` to open Config, use `Tab` to select **Alerts**, and select
 
 ## Build from source
 
-Requires **Go 1.27.3 or newer**, Git, and Make.
+Requires **Go 1.27.4 or newer**, Git, and Make.
 
 ```sh
 git clone https://github.com/cliffom/bambustand.git

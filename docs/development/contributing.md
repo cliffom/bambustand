@@ -4,7 +4,7 @@
 
 Read [UI direction](ui-direction.md) before UI changes and [documentation direction](documentation-direction.md) for documentation ownership and required PR evidence.
 
-Requires Go 1.27.3 or newer and Python 3.10+ for documentation checks. Bubble Tea v1, Bubbles, and Lip Gloss are pinned in `go.mod`.
+Requires Go 1.27.4 or newer and Python 3.10+ for documentation checks. Bubble Tea v1, Bubbles, and Lip Gloss are pinned in `go.mod`.
 
 ```sh
 make docs-check # documentation policy, links, and checker regression tests
