@@ -22,7 +22,7 @@ A keyboard-driven workspace for your farm: move between printers, inspect job de
 
 ### Web browser dashboard
 
-A visual farm overview with searchable, filterable printer cards, model illustrations, progress, temperatures, and filament. Open a printer for an Overview with job progress, independent time estimates, and temperature tiles; inspect selectable AMS spool racks in Filament, or review reported conditions in Notices. Paused, stopped, canceled and confirmed finished prints have shared outcome summaries; individual codes and local decisions remain accessible. Unknown readings stay unknown. Stale readings are labeled last-known; offline cards show just printer identity and inactive artwork, with reading metadata and notices available through inspection.
+A visual farm overview with searchable, filterable printer cards, model illustrations, progress, temperatures, and filament. Use Details or the printer name for an Overview with job progress, independent time estimates, and temperature tiles; inspect selectable AMS spool racks in Filament, or review reported conditions in Notices. Paused, stopped, canceled and confirmed finished prints have shared outcome summaries; individual codes and local decisions remain accessible. A separate attention action opens Notices. Status counts follow name/model search; phones use a Status selector. Unknown readings stay unknown. Stale readings are labeled last-known; offline cards show just printer identity and inactive artwork, with reading metadata and notices available through inspection.
 
 ![Current browser dashboard with one filter toolbar, printing and paused printers, a simplified offline card, and the bottom status bar.](assets/screenshots/browser.png)
 

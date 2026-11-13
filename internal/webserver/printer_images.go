@@ -5,11 +5,11 @@ import "strings"
 // Content-versioned local assets are decorative hardware depictions, never
 // telemetry. Only known model names resolve; unknown models keep the fallback.
 var printerImages = map[string]string{
-	"a1mini": "/printers/a1-mini-99cd4423fabe.png",
-	"h2d":    "/printers/h2d-ab6291473de5.png",
-	"p1s":    "/printers/p1s-1cf611b647f6.png",
-	"x1c":    "/printers/x1c-72b4402798e9.png",
-	"x2d":    "/printers/x2d-b7f68caf0fdf.png",
+	"a1mini": "/printers/a1-mini-0c99b467f25e.svg",
+	"h2d":    "/printers/h2d-cb2ed23f6432.svg",
+	"p1s":    "/printers/p1s-da09bdd74076.svg",
+	"x1c":    "/printers/x1c-2b13b073f31a.svg",
+	"x2d":    "/printers/x2d-0c7870c28cef.svg",
 }
 
 func printerImage(model string) string {

@@ -33,7 +33,7 @@ function inspector() {
   }
   for (const id of ["detail", "detail-title", "detail-model", "detail-artwork", "detail-body", "close-detail",
     "detail-tab-status", "detail-tab-filament", "detail-tab-notices",
-    "search", "sort",
+    "search", "sort", "mobile-filter",
     "review", "about", "close-about", "settings", "settings-dialog", "close-settings"]) element("#" + id);
   let html = "";
   Object.defineProperty(elements.get("#detail-body"), "innerHTML", {
@@ -430,14 +430,14 @@ test("cards keep last-known scope and attention explicit without repeated metric
   view.run('snapshot.printers[0].fresh = false; snapshot.printers[0].attention = true');
   const html = view.run('card(snapshot.printers[0])');
   assert.match(html, /Current state unconfirmed · readings are last-known; missing values remain unknown/);
-  assert.match(html, /Attention · unreviewed conditions/);
+  assert.match(html, /Attention · view notices/);
   assert.match(html, /Unknown material/);
   assert.doesNotMatch(html, /Last-known · (Nozzle|Bed|Reported progress|Unknown material)/);
   assert.doesNotMatch(html, /machine-state|MONITORING/);
 });
 
 
-test("every filter count matches its membership before search, including overlapping and last-reported states", () => {
+test("every filter count matches search intersected with its membership, including overlapping and last-reported states", () => {
   const view = inspector();
   view.run(`snapshot.connected = true; snapshot.printers = [
     {id:"a",name:"Alpha",state:"IDLE",idle_finished:true,online:true,fresh:true,attention:true},
@@ -446,7 +446,10 @@ test("every filter count matches its membership before search, including overlap
     {id:"d",name:"Unknown",state:"UNKNOWN",online:true,fresh:true}
   ]; query = "no matches";`);
   const counts = () => JSON.parse(view.run('JSON.stringify(["all","printing","idle","attention","unavailable"].map(filterCount))'));
-  assert.deepEqual(counts(), [4,2,1,2,1]);
+  assert.deepEqual(counts(), [0,0,0,0,0]);
+  view.run('query = "Alpha"');
+  assert.deepEqual(counts(), [1,0,1,1,0]);
+  view.run('query = "no matches"');
   assert.equal(view.run('visible().length'), 0);
   view.run('query = ""');
   for (const choice of ["all","printing","idle","attention","unavailable"])
@@ -475,7 +478,7 @@ test("offline cards show identity and attention without last-known telemetry", (
     assert.match(html, /printer-sprite/);
     assert.match(html, /Inspect Synthetic printer, Offline/);
     assert.match(html, />Offline</);
-    assert.match(html, /Attention · unreviewed conditions/);
+    assert.match(html, /Attention · view notices/);
     assert.doesNotMatch(html, /Old job|progress|metrics|Nozzle|Bed|Finish estimate|swatches|PLA|telemetry-note|Last-known/);
   }
   view.run('snapshot.printers[0].image = null; snapshot.printers[0].model = null');
@@ -494,7 +497,7 @@ test("staleness and feed loss do not simplify online or unknown-connectivity car
       const html = view.run('card(snapshot.printers[0])');
       assert.doesNotMatch(html, /class="card[^"<>]* offline/);
       assert.match(html, /Current state unconfirmed/);
-      assert.match(html, /Reported progress/);
+      assert.match(html, /No active print/);
       assert.match(html, /Nozzle/);
       assert.match(html, /Unknown material/);
     }
@@ -527,7 +530,7 @@ test("inspection defaults to Overview and remembers independent panel positions 
 
 test("review opens Notices and printer removal preserves tab with safe action focus", () => {
   const view = inspector();
-  view.run('snapshot.printers[0].attention = true; $("#review").onclick()');
+  view.run('snapshot.printers[0].attention = true; inspect("printer", "notices")');
   assert.equal(view.run('detailTab'), "notices");
   view.focus('[data-dismiss="visible"]');
   view.run('snapshot.printers = []; renderDetail()');

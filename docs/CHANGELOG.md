@@ -2,6 +2,12 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.10.0
+
+- Compact browser farm overview with search-aware status counts, a mobile Status selector, name/model search, and query/status recovery actions. Routine snapshot metadata now lives in the persistent footer.
+- Top-aligned front-view printer illustrations and shorter idle/offline cards. Details and printer names open Overview; separate attention actions open Notices.
+- Responsive inspector controls keep tabs in a single scrollable row and give job text more room at narrow widths and enlarged text. Existing filament inspection, local notice decisions, themes and notification policy remain in place. No configuration migration is required.
+
 ## 0.9.2 — Cloud login identity
 
 - Identify account API requests as BambuStand with the running version and project URL, removing the former Bambu network-agent/OrcaSlicer identity headers that reproduced HTTP 403 rejection. This applies to password/email-code login, token validation and discovery.

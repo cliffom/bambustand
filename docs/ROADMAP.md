@@ -14,9 +14,13 @@ Displayed telemetry has user-reported H2D/X2D validation, and historical router-
 
 Both interfaces show reported AMS drying status, known message descriptions and shared print outcomes. Native/browser notifications collect related reports per printer and represent cancellation through one failed-state outcome. The [notification strategy](development/notification-strategy.md) captures current rules and directing policy for iOS/Android; monitoring-loss notifications remain proposed.
 
+## Current priority
+
+The owner-requested compact browser dashboard in [#183](https://github.com/cliffom/bambustand/issues/183) takes the next release ahead of the notification backlog: search-aware status counts, mobile selection, compact cards and front-view illustrations, distinct Details/Notices entry, and responsive inspection. This branch prepares v0.10.0; the issue remains open until its implementation PR merges. Broader browser/device validation remains in #139. Notice controls (#136), view persistence (#138), remote access (#143), and notification policy remain separately scoped. After this release, resume the notification reliability milestone without dropping the usability and validation work below.
+
 ## Open-issue milestones
 
-Open issue states and milestone assignments were checked on 2026-11-08; closed #140 and #172 are no longer outstanding work. This backlog is grouped by outcome, without committed delivery dates or release versions. The design milestones track decisions only; implementation requires an adopted design and separately scoped work.
+Open issue states and milestone assignments were checked on 2026-11-12 against the open GitHub issues and milestone assignments. This backlog is grouped by outcome, without committed delivery dates or release versions. The design milestones track decisions only; implementation requires an adopted design and separately scoped work.
 
 | Milestone | Open issues | Completion criteria |
 | --- | --- | --- |

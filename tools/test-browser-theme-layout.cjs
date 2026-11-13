@@ -52,9 +52,9 @@ const {chromium} = require("playwright");
             const ratio = (a,b) => { const x=luminance(a), y=luminance(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); };
             const body=getComputedStyle(document.body), selected=getComputedStyle(document.querySelector(".filters .selected"));
             const footer=getComputedStyle(document.querySelector("footer")), live=getComputedStyle(document.querySelector("#feed-state"));
-            const warning=getComputedStyle(document.querySelector(".card-note"));
+            const warning=getComputedStyle(document.querySelector("[data-notices]"));
             const hint=getComputedStyle(document.querySelector("#settings-dialog .dialog-footer")), dialog=getComputedStyle(document.querySelector("#settings-dialog"));
-            return [ratio(body.color,body.backgroundColor), ratio(selected.color,selected.backgroundColor), ratio(footer.color,footer.backgroundColor), ratio(live.color,footer.backgroundColor),ratio(warning.color,body.backgroundColor), ratio(hint.color,dialog.backgroundColor)];
+            return [ratio(body.color,body.backgroundColor), ratio(selected.color,body.backgroundColor), ratio(footer.color,footer.backgroundColor), ratio(live.color,footer.backgroundColor),ratio(warning.color,body.backgroundColor), ratio(hint.color,dialog.backgroundColor)];
           });
           assert.ok(contrast.every(ratio => ratio >= 4.5), `${theme.id}: body, selection, footer and warning contrast ${contrast}`);
         }
@@ -72,7 +72,7 @@ const {chromium} = require("playwright");
           assert.equal(await card.evaluate(el => getComputedStyle(el).borderTopStyle), "dashed");
           assert.equal(await card.locator(".printer-view").evaluate(el => getComputedStyle(el).filter), "grayscale(1)");
           assert.equal(await card.locator(".metrics, .progress-track, .card-bottom").count(), 0);
-          assert.equal(await card.locator(".card-note").count(), 1, "offline attention remains visible");
+          assert.equal(await card.locator("[data-notices]").count(), 1, "offline attention remains visible");
         }
         await page.locator(".card").first().click();
         assert.equal(await page.locator("#detail").evaluate(el => el.scrollWidth > el.clientWidth + 1), false);

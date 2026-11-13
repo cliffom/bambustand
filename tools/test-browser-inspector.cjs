@@ -11,7 +11,7 @@ const {chromium} = require("playwright");
   const browser = await chromium.launch({headless: true,
     ...(process.env.BROWSER_PATH ? {executablePath: process.env.BROWSER_PATH} : {})});
   try {
-    for (const [width, height, scale] of [[1280,800,1], [1920,1080,1], [390,844,1],
+    for (const [width, height, scale] of [[1440,1000,1], [1280,800,1], [1920,1080,1], [390,844,1],
       [320,568,1], [568,320,1], [1280,240,1], [320,568,2], [390,844,2],
       [780,844,2], [568,320,2], [1280,240,2]]) {
       const page = await browser.newPage({viewport: {width,height}});
@@ -251,7 +251,7 @@ const {chromium} = require("playwright");
       assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Overview");
       assert.equal(await body.evaluate(el => el.scrollTop), 0);
       await page.keyboard.press("Escape");
-      await page.locator("#review").click();
+      await page.locator("[data-notices]").click();
       assert.equal(await page.getByRole("tab", {selected:true}).textContent(), "Notices");
       assert.deepEqual(errors, []);
       await page.close();
