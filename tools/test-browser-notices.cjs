@@ -702,6 +702,9 @@ test("card disclosure toggles only its printer without opening inspection or cha
   const view = inspector();
   view.run('$("#detail").close(); let disclosureRenders = 0; render = () => { disclosureRenders++; }');
   const before = view.run('JSON.stringify(snapshot.printers)');
+  const markup = view.run('card(snapshot.printers[0])');
+  for (const id of /aria-controls="([^"]+)"/.exec(markup)[1].split(" "))
+    assert.ok(markup.includes(`id="${id}"`), "disclosure references telemetry and revealed actions");
   assert.match(view.run('card(snapshot.printers[0])'), /aria-expanded="false"/);
   view.toggleCard("printer");
   assert.equal(view.run('$("#detail").open'), false);

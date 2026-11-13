@@ -128,9 +128,9 @@ function card(p) {
   const action = (text, kind = "name") => `<button data-action="${kind}" data-open="${escapeHTML(p.id)}" aria-haspopup="dialog"${kind === "notices" ? ' data-notices="true"' : ''}>${text}</button>`;
   const expanded = expandedCards.has(p.id);
   const bodyID = `card-body-${encodeURIComponent(p.id)}`;
-  const toggle = `<button class="card-toggle" data-action="expand" data-open="${escapeHTML(p.id)}" aria-expanded="${expanded}" aria-controls="${escapeHTML(bodyID)}" aria-label="${expanded ? "Collapse" : "Expand"} ${escapeHTML(p.name)} card"><span aria-hidden="true">⌄</span></button>`;
+  const toggle = `<button class="card-toggle" data-action="expand" data-open="${escapeHTML(p.id)}" aria-expanded="${expanded}" aria-controls="${escapeHTML(bodyID)} ${escapeHTML(bodyID)}-actions" aria-label="${expanded ? "Collapse" : "Expand"} ${escapeHTML(p.name)} card"><span aria-hidden="true">⌄</span></button>`;
   const heading = `<div class="card-head"><div class="card-identity"><h3>${action(escapeHTML(p.name))}</h3><div class="model">${escapeHTML(p.model || "Unknown model")}</div><span class="pill ${p.attention || !current(p) ? "warn" : p.state === "IDLE" ? "neutral" : ""}">${escapeHTML(label)}</span></div><div class="printer-view">${machine(p)}</div>${toggle}</div>`;
-  const actions = `<div class="card-actions">${p.attention ? action('◇ Attention · view notices', 'notices') : `<span>${p.conditions.some(condition => !condition.hidden) ? 'Reported notices' : 'No active notices'}</span>`}${action('Details ↗', 'details')}</div>`;
+  const actions = `<div class="card-actions" id="${escapeHTML(bodyID)}-actions">${p.attention ? action('◇ Attention · view notices', 'notices') : `<span>${p.conditions.some(condition => !condition.hidden) ? 'Reported notices' : 'No active notices'}</span>`}${action('Details ↗', 'details')}</div>`;
   const opening = `<article class="card ${p.attention ? "warning" : ""}${offline ? " offline" : ""}${expanded ? " expanded" : ""}" data-id="${escapeHTML(p.id)}" tabindex="-1" aria-label="Inspect ${escapeHTML(p.name)}, ${escapeHTML(label)}">`;
   if (offline) return `${opening}${heading}<div class="card-body" id="${escapeHTML(bodyID)}"></div>${actions}</article>`;
   const slots = allSlots(p).filter((s) => s.present !== false),
