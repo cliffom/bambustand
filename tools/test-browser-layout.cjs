@@ -48,6 +48,17 @@ const {chromium} = require("playwright");
         }), "small chevron is centered in the card footer");
         await toggle.focus();
         await page.keyboard.press("Enter");
+        await page.waitForFunction(id => {
+          const el = document.querySelector(`[data-id="${id}"] .card-toggle`);
+          const r = el.getBoundingClientRect(), shell = document.querySelector(".shell").getBoundingClientRect();
+          const toolbar = document.querySelector(".toolbar").getBoundingClientRect();
+          const top = document.querySelector(".shell").classList.contains("toolbar-scrolls") ? shell.top : Math.max(shell.top, toolbar.bottom);
+          return document.activeElement === el && r.top >= Math.max(0, top) && r.bottom <= Math.min(innerHeight, shell.bottom);
+        }, p.id);
+        if (p.id === "disclosure-0" && process.env.SCREENSHOT_DIR) {
+          fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true});
+          await page.screenshot({path: path.join(process.env.SCREENSHOT_DIR, `keyboard-disclosure-${width}x${height}-${scale}x.png`)});
+        }
         assert.equal(await toggle.getAttribute("aria-expanded"), "true");
         assert.equal(await page.locator("#detail").evaluate(el => el.open), false);
         assert.equal(await card.locator('[data-action="details"]').isVisible(), true);
@@ -57,6 +68,13 @@ const {chromium} = require("playwright");
         assert.equal(await toggle.evaluate(el => el === document.activeElement), true);
         await page.keyboard.press("Space");
         assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+        await page.waitForFunction(id => {
+          const el = document.querySelector(`[data-id="${id}"] .card-toggle`);
+          const r = el.getBoundingClientRect(), shell = document.querySelector(".shell").getBoundingClientRect();
+          const toolbar = document.querySelector(".toolbar").getBoundingClientRect();
+          const top = document.querySelector(".shell").classList.contains("toolbar-scrolls") ? shell.top : Math.max(shell.top, toolbar.bottom);
+          return document.activeElement === el && r.top >= Math.max(0, top) && r.bottom <= Math.min(innerHeight, shell.bottom);
+        }, p.id);
       }
       const card = page.locator('[data-id="disclosure-0"]'), toggle = card.locator(".card-toggle");
       await toggle.click();

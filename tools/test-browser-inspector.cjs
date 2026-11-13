@@ -63,6 +63,14 @@ const {chromium} = require("playwright");
           return tab.left >= strip.left - 1 && tab.right <= strip.right + 1;
         }), `${width}x${height} ${scale}x: opening reveals the selected ${name} tab`);
       }
+      // Opening on desktop then shrinking must return to a visible same-printer action.
+      await page.setViewportSize({width: 1280, height: 844});
+      await page.locator('[data-action="details"]').click();
+      await page.setViewportSize({width: 390, height: 844});
+      await closeInspector();
+      assert.equal(await page.locator('[data-action="name"]').evaluate(el => el === document.activeElement), true,
+        "hidden Details opener falls back to the same printer name after resize");
+      await page.setViewportSize({width, height});
       if (await page.locator(".card-toggle").isVisible()) await page.locator(".card-toggle").click();
       // Opening must reveal the selection without moving keyboard focus onto it.
       await page.locator('[data-action="notices"]').click();

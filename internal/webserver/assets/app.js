@@ -504,6 +504,19 @@ document.addEventListener("click", (event) => {
     if (expandedCards.has(id)) expandedCards.delete(id);
     else expandedCards.add(id);
     render();
+    // Explicit keyboard disclosure is navigation; passive telemetry renders are not.
+    if (event.detail === 0) requestAnimationFrame(() => {
+      const target = document.querySelector(`button[data-open="${CSS.escape(id)}"][data-action="expand"]`);
+      if (document.activeElement !== target) return;
+      target.scrollIntoView({block: "nearest", inline: "nearest"});
+      requestAnimationFrame(() => {
+        const shell = $(".shell"), toolbar = $(".toolbar");
+        if (document.activeElement !== target || !shell || !toolbar || shell.classList.contains("toolbar-scrolls")) return;
+        const top = Math.max(shell.getBoundingClientRect().top, toolbar.getBoundingClientRect().bottom) + 8;
+        const focusedTop = target.getBoundingClientRect().top;
+        if (focusedTop < top) shell.scrollTop += focusedTop - top;
+      });
+    });
     return;
   }
   const tab = event.target.closest("[data-detail-tab]");
@@ -562,7 +575,11 @@ $("#detail").addEventListener("close", () => {
       ? `button[data-open="${CSS.escape(opener.printer)}"][data-action="${CSS.escape(opener.action)}"]`
       : `.card[data-id="${CSS.escape(opener.printer)}"]`)
     : opener?.element?.isConnected ? opener.element : null;
-  (target || activeFilterControl())?.focus({preventScroll: true});
+  const visibleTarget = target?.getClientRects().length ? target : null;
+  const name = target && opener?.printer
+    ? document.querySelector(`button[data-open="${CSS.escape(opener.printer)}"][data-action="name"]`) : null;
+  const visibleName = name?.getClientRects().length ? name : null;
+  (visibleTarget || visibleName || activeFilterControl())?.focus({preventScroll: true});
   detailOpener = null;
 });
 $("#close-detail").onclick = () => $("#detail").close();
