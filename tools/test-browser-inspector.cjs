@@ -63,6 +63,7 @@ const {chromium} = require("playwright");
           return tab.left >= strip.left - 1 && tab.right <= strip.right + 1;
         }), `${width}x${height} ${scale}x: opening reveals the selected ${name} tab`);
       }
+      if (await page.locator(".card-toggle").isVisible()) await page.locator(".card-toggle").click();
       // Opening must reveal the selection without moving keyboard focus onto it.
       await page.locator('[data-action="notices"]').click();
       await assertSelectedTabVisible("Notices");

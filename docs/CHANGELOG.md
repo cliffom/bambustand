@@ -2,6 +2,11 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.11.0 — Expandable mobile printer cards
+
+- Mobile browser cards start with printer identity, image, and textual status; an accessible arrow expands or collapses inline telemetry and Details.
+- Expansion choices follow printers through page-session updates, filtering, sorting, and resizing. Desktop cards stay fully visible; attention and unavailable-data warnings remain visible when collapsed, and offline cards retain their simplified presentation.
+
 ## 0.10.1
 
 - Shorten browser status tabs to All, Active and Idle, and separate desktop totals in circular badges. Desktop tabs have horizontal spacing, and the full-width mobile Status selector uses the same labels with an accessible, visually hidden label. Filter membership and search-aware counts are unchanged: Active means last reported running, and Idle includes currently available Idle or Finished printers without implying physical readiness. No configuration migration is required.

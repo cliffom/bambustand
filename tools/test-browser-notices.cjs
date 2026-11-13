@@ -76,6 +76,9 @@ function inspector() {
       target.focus();
       listeners.click({target: {closest: selector => selector === "[data-slot-key]" ? target : null}});
     },
+    toggleCard(id) {
+      listeners.click({target: {closest: selector => selector === ".card-toggle" ? {dataset: {open: id}} : null}});
+    },
     toggle() {
       const target = elements.get("#toggle-hidden-messages");
       listeners.click({target: {closest: (selector) =>
@@ -692,4 +695,22 @@ test("notification re-entry retains the original opener until the inspector clos
   view.focus("#sort");
   view.run('inspect("printer")');
   assert.equal(view.run('detailOpener.element.id'), "sort");
+});
+
+
+test("card disclosure toggles only its printer without opening inspection or changing telemetry", () => {
+  const view = inspector();
+  view.run('$("#detail").close(); let disclosureRenders = 0; render = () => { disclosureRenders++; }');
+  const before = view.run('JSON.stringify(snapshot.printers)');
+  assert.match(view.run('card(snapshot.printers[0])'), /aria-expanded="false"/);
+  view.toggleCard("printer");
+  assert.equal(view.run('$("#detail").open'), false);
+  assert.match(view.run('card(snapshot.printers[0])'), /aria-expanded="true"/);
+  view.toggleCard("another");
+  assert.equal(view.run('expandedCards.has("printer")'), true);
+  view.toggleCard("printer");
+  assert.match(view.run('card(snapshot.printers[0])'), /aria-expanded="false"/);
+  assert.equal(view.run('expandedCards.has("another")'), true);
+  assert.equal(view.run('disclosureRenders'), 3);
+  assert.equal(view.run('JSON.stringify(snapshot.printers)'), before);
 });
