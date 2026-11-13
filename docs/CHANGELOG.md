@@ -2,6 +2,10 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.10.1
+
+- Shorten browser status tabs to All, Active and Idle, and separate desktop totals in circular badges. The mobile Status selector uses the same labels. Filter membership and search-aware counts are unchanged: Active means last reported running, and Idle includes currently available Idle or Finished printers without implying physical readiness. No configuration migration is required.
+
 ## 0.10.0
 
 - Source builds require Go 1.27.4 or newer, addressing the standard-library vulnerability GO-2026-6859 reported by the release scan.

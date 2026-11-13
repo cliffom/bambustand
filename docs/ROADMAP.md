@@ -16,7 +16,7 @@ Both interfaces show reported AMS drying status, known message descriptions and 
 
 ## Current priority
 
-The owner-requested compact browser dashboard in [#183](https://github.com/cliffom/bambustand/issues/183) takes the next release ahead of the notification backlog: search-aware status counts, mobile selection, compact cards and front-view illustrations, distinct Details/Notices entry, and responsive inspection. This branch prepares v0.10.0; the issue remains open until its implementation PR merges. Broader browser/device validation remains in #139. Notice controls (#136), view persistence (#138), remote access (#143), and notification policy remain separately scoped. After this release, resume the notification reliability milestone without dropping the usability and validation work below.
+The compact browser dashboard overhaul (#183) is complete. The requested tab-label and circular-count refinement in [#185](https://github.com/cliffom/bambustand/issues/185) prepares v0.10.1. After this polish, resume the notification reliability milestone, led by sustained monitoring-loss alerts (#175), without dropping the usability and validation work below. Broader browser/device validation remains in #139; notice controls (#136), view persistence (#138) and remote access (#143) remain separately scoped.
 
 ## Open-issue milestones
 

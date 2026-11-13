@@ -362,8 +362,18 @@ h2 > span {
   box-shadow: 0 1px 3px #0004;
 }
 .filters button > span {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: max(1.8em, calc(1ch * var(--count-digits, 1) + 0.8em));
+  aspect-ratio: 1;
+  border: 1px solid currentColor;
+  border-radius: 50%;
   color: inherit;
-  margin-left: 4px;
+  margin-left: 0.4em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  vertical-align: middle;
 }
 .filter-help {
   color: var(--muted);

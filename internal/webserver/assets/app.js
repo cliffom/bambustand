@@ -214,8 +214,11 @@ function render() {
     b.setAttribute("aria-pressed", String(b.dataset.filter === filter));
   });
   if (!snapshot) return;
-  for (const choice of ["all", "printing", "idle", "attention", "unavailable"])
-    $("#" + choice + "-count").textContent = filterCount(choice);
+  for (const choice of ["all", "printing", "idle", "attention", "unavailable"]) {
+    const count = $("#" + choice + "-count"), value = String(filterCount(choice));
+    count.textContent = value;
+    count.style.setProperty("--count-digits", value.length);
+  }
   const selector = $("#mobile-filter");
   const options = Array.from(document.querySelectorAll(".filters button")).map(button =>
     `<option value="${button.dataset.filter}">${escapeHTML(button.textContent.trim())}</option>`).join("");

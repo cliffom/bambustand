@@ -43,6 +43,11 @@ const {chromium} = require("playwright");
           assert.match(await page.locator(`#mobile-filter option[value="${choice}"]`).textContent(), new RegExp(` ${expected[i]}$`));
         }
       }
+      const labels = {all: "All", printing: "Active", idle: "Idle", attention: "Attention", unavailable: "Unavailable"};
+      for (const [choice, label] of Object.entries(labels)) {
+        assert.match(await page.locator(`[data-filter="${choice}"]`).textContent(), new RegExp(`^${label} `));
+        assert.match(await page.locator(`#mobile-filter option[value="${choice}"]`).textContent(), new RegExp(`^${label} `));
+      }
       await counts([3, 1, 2, 2, 0]);
       await page.locator("#search").fill("h2d");
       await counts([2, 1, 1, 1, 0]);
@@ -482,6 +487,22 @@ const {chromium} = require("playwright");
           unavailable: printers.filter(p => !p.fresh).length};
         for (const [choice, expected] of Object.entries(expectedCounts))
           assert.equal(await page.locator(`#${choice}-count`).textContent(), String(expected));
+        if (width > 760) {
+          const badges = await page.locator(".filters button > span").evaluateAll(elements => elements.map(el => {
+            const rect = el.getBoundingClientRect(), css = getComputedStyle(el);
+            const text = document.createRange(); text.selectNodeContents(el);
+            const ink = text.getBoundingClientRect();
+            return {value: el.textContent, width: rect.width, height: rect.height, radius: css.borderRadius,
+              border: css.borderTopStyle, fits: ink.left > rect.left && ink.right < rect.right &&
+                ink.top > rect.top && ink.bottom < rect.bottom};
+          }));
+          for (const badge of badges) {
+            assert.ok(Math.abs(badge.width - badge.height) < 1, `circular badge: ${JSON.stringify(badge)}`);
+            assert.equal(badge.radius, "50%");
+            assert.equal(badge.border, "solid");
+            assert.ok(badge.fits, `count fits its circle: ${JSON.stringify(badge)}`);
+          }
+        }
         const idle = page.locator('[data-filter="idle"]');
         const idleCount = printers.filter(p => p.idle_finished).length;
         assert.equal(await page.locator("#idle-count").textContent(), String(idleCount));
