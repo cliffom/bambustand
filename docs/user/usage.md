@@ -147,7 +147,7 @@ These captures show the current dashboard using synthetic demo data, with printi
 
 | Default | Gruvbox Dark |
 | --- | --- |
-| [![Default browser dashboard](../../assets/screenshots/browser.png)](../../assets/screenshots/browser.png) | [![Gruvbox Dark browser dashboard](../../assets/screenshots/browser-theme-gruvbox-dark.png)](../../assets/screenshots/browser-theme-gruvbox-dark.png) |
+| [![Default browser dashboard at 1440 by 900](../../assets/screenshots/browser.png)](../../assets/screenshots/browser.png) | [![Gruvbox Dark browser dashboard](../../assets/screenshots/browser-theme-gruvbox-dark.png)](../../assets/screenshots/browser-theme-gruvbox-dark.png) |
 | **Hotdog** | **C64** |
 | [![Hotdog browser dashboard](../../assets/screenshots/browser-theme-hotdog.png)](../../assets/screenshots/browser-theme-hotdog.png) | [![C64 browser dashboard](../../assets/screenshots/browser-theme-c64.png)](../../assets/screenshots/browser-theme-c64.png) |
 | **IBM 3270** | **DeskMate** |
@@ -155,7 +155,7 @@ These captures show the current dashboard using synthetic demo data, with printi
 
 | Overview tab | Filament tab |
 | --- | --- |
-| [![Overview showing a spaghetti pause outcome, progress ring, temperature tiles, and Reading details](../../assets/screenshots/browser-printer-details.png)](../../assets/screenshots/browser-printer-details.png) | [![Filament showing AMS drying status, selectable spool racks, and inline material inspection](../../assets/screenshots/browser-filament.png)](../../assets/screenshots/browser-filament.png) |
+| [![Overview showing a spaghetti pause outcome, reported progress ring, layer count, and temperature tiles](../../assets/screenshots/browser-printer-details.png)](../../assets/screenshots/browser-printer-details.png) | [![Filament showing AMS drying status, selectable spool racks, and inline material inspection](../../assets/screenshots/browser-filament.png)](../../assets/screenshots/browser-filament.png) |
 
 [![Notices tab with a consolidated spaghetti pause summary, independent codes and local hide controls](../../assets/screenshots/browser-notices.png)](../../assets/screenshots/browser-notices.png)
 
@@ -171,7 +171,7 @@ The [Appearance and notification settings](../../assets/screenshots/browser-them
 
 On screens up to 760 CSS pixels wide, cards start collapsed to the name, model, image, and status. Use the small chevron in the card footer to expand or collapse inline readings; the choice stays with each printer during this page session, including filtering, sorting, updates, and resizing. Desktop shows full cards. Attention links and unavailable-data warnings remain visible when collapsed; the printer name still opens Overview. Keyboard expansion and collapse keep the focused footer in view. Resizing that hides the focused chevron or Details button moves focus to that printer’s name. If resizing hides the Details button while the inspector is open, closing returns focus to that printer’s name. Offline cards never add telemetry when expanded.
 
-[Expanded mobile card](../../assets/screenshots/browser-mobile-expanded.png) shows the inline readings.
+[Expanded mobile card](../../assets/screenshots/browser-mobile-expanded.png) shows the inline readings and collapse chevron beneath the pinned toolbar at 390 × 844.
 
 | Mobile overview | Mobile offline card |
 | --- | --- |

@@ -71,6 +71,10 @@ If the selected printer is removed or stops matching, selection falls back to th
 
 An action-needed modal still opens for an eligible printer hidden by a filter. Its explicit `p` / Enter navigation resets an excluding filter to All so the requested printer can be selected; the chosen sort remains. That All filter is saved too. Other dialogs keep their existing printer/notice identity and key handling.
 
+Press `m` to open the selected printer’s AMS / Filament view. This synthetic example keeps estimated remaining quantities and unknown values distinct:
+
+![AMS and filament view for a synthetic H2D, showing reported unit readings, PLA and PETG slots, an unknown remaining estimate, an empty slot, and nozzle assignments.](../../assets/screenshots/tui-filament.png)
+
 ## Saved view preferences
 
 `F` and `S` save the selected filter and sort in the active TOML configuration (`--config` or the path printed by `--config-path`). Dashboard `0` resets both to **All / Name** and saves that choice; it works from any dashboard panel, including an empty filtered list. Dialogs keep their own key handling. Below 60×18, hidden view changes are blocked until the terminal is resized.

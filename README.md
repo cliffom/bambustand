@@ -18,13 +18,15 @@ BambuStand connects through **Bambu Cloud**, with displayed telemetry validated 
 
 A keyboard-driven workspace for your farm: move between printers, inspect job details and AMS filament, review action-needed notices with a shared print outcome and next step, and set alert preferences. Built-in and custom themes let you make it your own.
 
-![BambuStand terminal dashboard showing two synthetic printers, selected printer details, filament inventory, notices, and recent events.](assets/screenshots/farm.png)
+![BambuStand v0.11.0 terminal dashboard at 150 columns by 44 rows, showing two synthetic printers, selected printer details, filament inventory, notices, and recent events.](assets/screenshots/farm.png)
+
+Press `m` for [AMS and filament details](assets/screenshots/tui-filament.png), including reported slot material, remaining estimates, nozzle assignment, and per-unit readings.
 
 ### Web browser dashboard
 
 A visual farm overview with searchable, filterable printer cards, model illustrations, progress, temperatures, and filament. Use Details or the printer name for an Overview with job progress, independent time estimates, and temperature tiles; inspect selectable AMS spool racks in Filament, or review reported conditions in Notices. Paused, stopped, canceled and confirmed finished prints have shared outcome summaries; individual codes and local decisions remain accessible. A separate attention action opens Notices. Status counts follow name/model search; phones use a Status selector and compact printer cards with a footer chevron to expand inline readings. Unknown readings stay unknown. Stale readings are labeled last-known; offline cards show just printer identity and inactive artwork, with reading metadata and notices available through inspection.
 
-![Browser dashboard with All, Active and Idle status tabs, circular totals, printing and paused printers, a simplified offline card, and the bottom status bar.](assets/screenshots/browser.png)
+![Browser dashboard at 1440 by 900 with status tabs and circular totals, printing and paused printers, a simplified offline card, and the bottom status bar.](assets/screenshots/browser.png)
 
 Scroll the farm to [compact the header and keep the filter/search toolbar beneath it](assets/screenshots/browser-scrolled.png). Small workspaces let the toolbar scroll so cards remain reachable.
 
