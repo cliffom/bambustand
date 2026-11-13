@@ -19,7 +19,7 @@ const {chromium} = require("playwright");
     ...(process.env.BROWSER_PATH ? {executablePath: process.env.BROWSER_PATH} : {})});
   const errors = [];
   try {
-    async function open(viewport = {width: 1280, height: 1200}, finished = false, canceled = false, idleExample = false) {
+    async function open(viewport = {width: 1440, height: 900}, finished = false, canceled = false, idleExample = false) {
       const page = await browser.newPage({viewport, locale: "en-US", timezoneId: "UTC"});
       page.on("pageerror", error => errors.push(error.message));
       await page.route("**/api/snapshot", route => {
@@ -146,6 +146,9 @@ const {chromium} = require("playwright");
     await shot(mobile, "browser-mobile.png");
     await mobile.locator('.card-toggle').first().click();
     await mobile.locator('.card-toggle').first().evaluate(el => el.scrollIntoView({block: "end"}));
+    await mobile.locator('.shell').evaluate(el => {
+      el.scrollTop += document.querySelector('.toolbar').getBoundingClientRect().top - document.querySelector('header').getBoundingClientRect().bottom;
+    });
     await shot(mobile, "browser-mobile-expanded.png");
     await mobile.locator('.card-toggle').first().click();
     await mobile.locator('.card.offline').focus();
