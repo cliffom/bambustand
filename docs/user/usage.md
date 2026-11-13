@@ -167,7 +167,7 @@ The [compact idle example](../../assets/screenshots/browser-idle.png) shows an A
 
 The [scrolled desktop view](../../assets/screenshots/browser-scrolled.png) shows the compact header and pinned filter/search/sort toolbar at 1280 × 640. The toolbar also stays visible in the mobile offline-card view below.
 
-The [Appearance and notification settings](../../assets/screenshots/browser-themes.png) capture above shows the theme selector and Enable/Test/Disable controls with automatic browser notifications off. The [Idle / finished filter](../../assets/screenshots/browser-idle-filter.png) capture uses a separate synthetic finished-printer scenario; it does not establish that a printer is physically ready.
+The [Appearance and notification settings](../../assets/screenshots/browser-themes.png) capture above shows the theme selector and Enable/Test/Disable controls with automatic browser notifications off. The [Idle / finished filter](../../assets/screenshots/browser-idle-filter.png) and [mobile Status selector in Gruvbox Dark](../../assets/screenshots/browser-idle-filter-mobile.png) captures use a separate synthetic finished-printer scenario; it does not establish that a printer is physically ready.
 
 | Mobile overview | Mobile offline card after scrolling |
 | --- | --- |

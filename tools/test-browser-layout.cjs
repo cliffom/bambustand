@@ -424,14 +424,18 @@ const {chromium} = require("playwright");
           "connection/demo status lives on the left of the footer");
         assert.equal(await page.locator("header #feed-state, .readonly, .brand small").count(), 0);
         assert.match(await page.locator("#feed-state").textContent(), /Demo/);
-        assert.ok(await page.locator(".tools .sort-control").evaluate(el => {
-          const select = el.querySelector("select"), icon = el.querySelector("svg");
-          const box = select.getBoundingClientRect(), arrow = icon.getBoundingClientRect();
-          return arrow.left > box.left && arrow.right < box.right - arrow.width / 2 &&
-            Math.abs((arrow.top + arrow.bottom) / 2 - (box.top + box.bottom) / 2) < 1 &&
-            parseFloat(getComputedStyle(select).paddingInlineEnd) >= arrow.width * 2 &&
-            getComputedStyle(icon).pointerEvents === "none";
-        }), "sort chevron is centered and inset with reserved text space");
+        const selectControls = [".tools .sort-control"];
+        if (await page.locator(".mobile-status").isVisible()) selectControls.push(".mobile-status .sort-control");
+        for (const selector of selectControls) {
+          assert.ok(await page.locator(selector).evaluate(el => {
+            const select = el.querySelector("select"), icon = el.querySelector("svg");
+            const box = select.getBoundingClientRect(), arrow = icon.getBoundingClientRect();
+            return arrow.left > box.left && arrow.right < box.right - arrow.width / 2 &&
+              Math.abs((arrow.top + arrow.bottom) / 2 - (box.top + box.bottom) / 2) < 1 &&
+              parseFloat(getComputedStyle(select).paddingInlineEnd) >= arrow.width * 2 &&
+              getComputedStyle(icon).pointerEvents === "none";
+          }), `${selector}: chevron is centered and inset with reserved text space`);
+        }
         for (const printer of printers.filter(p => !p.online)) {
           const card = page.locator(`[data-id="${printer.id}"]`);
           assert.equal(await card.locator(".job, .progress-label, .progress-track, .metrics, .card-bottom, .telemetry-note").count(), 0);

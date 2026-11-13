@@ -1371,7 +1371,8 @@ footer { gap: 8px 16px; padding: 8px 32px; font-size: .875rem; }
   .toolbar { padding-top: 8px; }
   .filters { display: none; }
   .mobile-status { display: flex; width: 100%; align-items: center; gap: 12px; font-size: .875rem; color: var(--secondary); }
-  .mobile-status select { flex: 1; min-width: 0; }
+  .mobile-status .sort-control { flex: 1; min-width: 0; }
+  .mobile-status select { width: 100%; min-width: 0; }
   .tools { width: 100%; }
   .search { max-width: none; }
   .card { padding: 18px; }

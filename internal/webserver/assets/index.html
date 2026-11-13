@@ -51,7 +51,14 @@
               ><button data-filter="attention" aria-pressed="false">Attention <span id="attention-count">0</span></button
               ><button data-filter="unavailable" aria-pressed="false">Unavailable <span id="unavailable-count">0</span></button>
             </div>
-            <label class="mobile-status">Status<select id="mobile-filter" aria-describedby="idle-filter-help"></select></label>
+            <label class="mobile-status">Status
+              <span class="sort-control">
+                <select id="mobile-filter" aria-describedby="idle-filter-help"></select>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </span>
+            </label>
             <div class="tools">
               <label class="search"
                 ><span>⌕</span
@@ -71,7 +78,7 @@
               </div>
             </div>
           </div>
-          <p id="idle-filter-help" class="filter-help" hidden>Online printers reporting Idle or Finished with current telemetry. This does not confirm the build plate is clear or the printer is ready for another job.</p>
+          <p id="idle-filter-help" class="filter-help" hidden>Reported idle / finished. Physical readiness unconfirmed.</p>
           <div id="cards" class="cards">
             <div class="empty">Waiting for a monitoring snapshot…</div>
           </div>

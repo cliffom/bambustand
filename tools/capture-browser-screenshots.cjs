@@ -125,6 +125,11 @@ const {chromium} = require("playwright");
     assert.equal(await idle.locator(".card").count(), 1);
     await shot(idle, "browser-idle-filter.png");
     await idle.close();
+    const mobileIdle = await open({width: 390, height: 844}, true);
+    await theme(mobileIdle, "gruvbox-dark");
+    await mobileIdle.locator("#mobile-filter").selectOption("idle");
+    await shot(mobileIdle, "browser-idle-filter-mobile.png");
+    await mobileIdle.close();
     const scrolled = await open({width: 1280, height: 640});
     await scrolled.locator(".shell").evaluate(el => {
       el.scrollTop = document.querySelector(".fleet").getBoundingClientRect().top - el.getBoundingClientRect().top;
