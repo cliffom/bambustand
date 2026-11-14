@@ -183,8 +183,12 @@ func (m *Model) shutdownKey(key string, _ tea.Msg) tea.Cmd {
 }
 
 func (m Model) shutdownView() string {
-	if m.quitting {
-		return fit(wrapLines([]string{"Esc cancels quitting; saves continue.", "Saving settings/notices/snoozes and stopping notifications (up to 5 seconds)."}, m.width), m.width, m.height)
+	w, h := m.width, m.height
+	if m.terminalFits() {
+		w, h = m.dialogWidth(), m.dialogHeight()
 	}
-	return fit(wrapLines([]string{"q / Ctrl+C exits anyway; Esc cancels.", "Storage failed or did not finish within 5 seconds; changes may be lost.", m.storageWarning()}, m.width), m.width, m.height)
+	if m.quitting {
+		return fit(wrapLines([]string{"Esc cancels quitting; saves continue.", "Saving settings/notices/snoozes and stopping notifications (up to 5 seconds)."}, w), w, h)
+	}
+	return fit(wrapLines([]string{"q / Ctrl+C exits anyway; Esc cancels.", "Storage failed or did not finish within 5 seconds; changes may be lost.", m.storageWarning()}, w), w, h)
 }

@@ -53,6 +53,13 @@ func (m Model) modalView(content string) string {
 // An inherited background has no known RGB: infer a dark/light blending target
 // from the theme's text, without querying the terminal or painting that target.
 func (m Model) dimmedDashboard() []string {
+	// Server Status promises bounded, fixed diagnostics. Dashboard notices,
+	// history and feedback can contain raw backend errors, so none of that
+	// content may show around this inspector, regardless of terminal size.
+	// Render a neutral surface without modifying the shared farm or its history.
+	if m.dialog.active == dialogServerStatus {
+		return strings.Split(m.styles.canvas("", m.width, m.height), "\n")
+	}
 	p := m.styles.palette
 	background := p.Background
 	if background == "" {
@@ -71,9 +78,6 @@ func (m Model) dimmedDashboard() []string {
 		roles.Field(i).SetString(string(blend(lipgloss.Color(roles.Field(i).String()), background)))
 	}
 	m.styles = newStyles(p)
-	if m.dialog.active == dialogServerStatus {
-		m.toast = ""
-	}
 	// Cached panel content must use the same dimmed semantic palette. This is a
 	// value copy: dashboard viewports are values and no dialog cache is touched.
 	m.syncPanels()

@@ -20,6 +20,31 @@ func activeView(m Model) string {
 	return m.View()
 }
 
+func TestShutdownWrapsWithinItsActualSurface(t *testing.T) {
+	for _, size := range [][2]int{{60, 18}, {80, 24}, {120, 32}, {120, 60}, {59, 17}, {40, 10}} {
+		for _, saving := range []bool{false, true} {
+			m := resizeModel(demoModel(), size[0], size[1])
+			m.openDialog(dialogShutdown)
+			m.quitting, m.quitProblem = saving, !saving
+			m.configStorageError = "Synthetic settings save failed; retry after checking storage."
+			text := strings.Join(strings.Fields(ansi.Strip(activeView(m))), "")
+			want := []string{"q / Ctrl+C exits anyway; Esc cancels.", "changes may be lost.", m.configStorageError}
+			if saving {
+				want = []string{"Esc cancels quitting; saves continue.", "Saving settings/notices/snoozes and stopping notifications (up to 5 seconds)."}
+			}
+			for _, phrase := range want {
+				if !strings.Contains(text, strings.Join(strings.Fields(phrase), "")) {
+					t.Fatalf("%v saving=%v lost %q: %s", size, saving, phrase, text)
+				}
+			}
+			m = key(m, "esc")
+			if m.hasOpenDialog() || m.quitting || m.quitProblem {
+				t.Fatal("shutdown cancel lost after resize")
+			}
+		}
+	}
+}
+
 func TestModalFullContrastAndInactiveDimming(t *testing.T) {
 	previous := lipgloss.ColorProfile()
 	t.Cleanup(func() { lipgloss.SetColorProfile(previous) })

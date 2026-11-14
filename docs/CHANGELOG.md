@@ -4,6 +4,7 @@ Release changes and upgrade notes are recorded below. Names and scope describe e
 
 ## 0.12.0 — Terminal UI refresh
 
+- Server Status hides dashboard diagnostics behind a neutral backdrop; shutdown warnings wrap to the active frame, preserving their text on compact terminals.
 - Notification activity aligns time, printer, subject and outcome columns, including long names and compact terminals. The two farm-summary rows also use aligned columns beneath the unchanged title row.
 
 - Rounded dashboard panels, shared Details/Notices boundaries, explicit focus outlines and dotted detail grouping make the farm easier to scan.
