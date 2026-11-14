@@ -58,15 +58,8 @@ func TestDashboardSectionHeadersFollowPanelFocus(t *testing.T) {
 				m = attentionReport(t, next.(Model), "H", `{"print":{"gcode_state":"RUNNING","mc_percent":42}}`)
 				view := ansi.Strip(m.View())
 				for _, title := range []string{"PRINTERS", "PRINTER DETAILS", "NOTICES"} {
-					marker := "  "
-					if title == focused {
-						marker = "› "
-					}
-					if !strings.Contains(view, marker+title+" ─") {
-						t.Fatalf("missing section header %q with focus on %s:\n%s", title, focused, view)
-					}
-					if strings.Contains(view, "› "+title+" ─") != (title == focused) {
-						t.Fatalf("incorrect focus marker for %s:\n%s", title, view)
+					if !strings.Contains(view, "─ "+title+" ─") || strings.Contains(view, "› "+title) {
+						t.Fatalf("missing horizontal title border or retained chevron for %s with focus on %s:\n%s", title, focused, view)
 					}
 				}
 				if m.current().ID != "H" {

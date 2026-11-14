@@ -262,7 +262,7 @@ func TestPaletteRolesReachFieldsFocusSelectionAndFilament(t *testing.T) {
 	m := filamentModel().WithPalette(p)
 	assertPaint(t, m.detailText(100), "Printer Name:", p.SecondaryText, "", false)
 	assertPaint(t, m.detailText(100), "H2D", p.Accent, "", true)
-	assertPaint(t, m.section("PRINTERS", true, 100), "PRINTERS", p.Focus, "", false)
+	assertPaint(t, m.panelEdge("PRINTERS", true, 100, "╭", "╮"), "PRINTERS", p.Focus, "", false)
 	assertPaint(t, m.printerRow(0), "H2D", p.SelectedText, p.SelectedBackground, false)
 	assertPaint(t, m.printerRow(1), "X2D", p.Text, "", false)
 	assertPaint(t, m.slotValue(m.current().AMS[2].Slots[1]), "Empty", p.MutedText, "", false)

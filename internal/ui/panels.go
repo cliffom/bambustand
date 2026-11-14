@@ -27,11 +27,7 @@ func (m Model) panelStroke(focused bool) lipgloss.Style {
 func (m Model) panelEdge(title string, focused bool, width int, left, right string) string {
 	label := ""
 	if title != "" {
-		marker := "  "
-		if focused {
-			marker = "› "
-		}
-		label = ansi.Truncate(marker+title+" ", max(0, width-2), "…")
+		label = ansi.Truncate("─ "+title+" ", max(0, width-2), "…")
 	}
 	return m.panelStroke(focused).Render(left + label + strings.Repeat("─", max(0, width-ansi.StringWidth(left+label+right))) + right)
 }

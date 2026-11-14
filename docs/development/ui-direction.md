@@ -14,7 +14,7 @@ Use a full-width themed background (slate in the default theme) for the bottom d
 
 ## Shared terminal frames and modals
 
-Use conventional rounded box-drawing frames with integrated titles. Dashboard Details and Notices share a divider and T-junctions at 105 columns and above; narrower layouts stack them. Dotted separators distinguish identity/job, progress/time and temperature groups without adding competing panels. Focus combines an accent outline with a text marker; selected rows retain their semantic surface.
+Use conventional rounded box-drawing frames with integrated titles. Dashboard Details and Notices share a divider and T-junctions at 105 columns and above; narrower layouts stack them. Dotted separators distinguish identity/job, progress/time and temperature groups without adding competing panels. Panel titles start after a horizontal border segment, without chevrons. Focus uses the accent outline; selected rows retain their semantic surface and row markers.
 
 Dialogs use one shared opaque compositor over the entire dimmed dashboard, including its header, selected row and footer. Bound the interior to 100 columns × 26 rows and available terminal space, retaining margins at 60 × 18. Center the complete frame against the full viewport on both axes, allowing one cell for rounding. Recompute geometry on resize without replacing the owner, input, confirmation, selection or scroll. Keep each owner's footer fixed inside its frame; its controls alone are active. Below minimum, retain the existing warning/input guards and dedicated shutdown controls.
 

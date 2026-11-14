@@ -611,17 +611,6 @@ func fit(s string, w, h int) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) section(title string, focused bool, w int) string {
-	style := m.styles.secondary
-	marker := "  "
-	if focused {
-		style = m.styles.focus
-		marker = "› "
-	}
-	text := marker + safe(title) + " "
-	return style.Render(text + strings.Repeat("─", max(0, w-ansi.StringWidth(text))))
-}
-
 func (m Model) tableHeader() string {
 	c := columnsFor(m.width)
 	if m.width < compactTableWidth {
