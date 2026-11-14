@@ -51,7 +51,7 @@ func TestSelectedActivityOutcomesUseSelectionPalette(t *testing.T) {
 						selectedRows, otherRows := 0, 0
 						for _, line := range strings.Split(activeView(m), "\n") {
 							plain := ansi.Strip(line)
-							if !strings.Contains(plain, " · Fault 0700_8011 · ") {
+							if ansi.Strip(ansi.Cut(line, 4, 5)) != ":" || !strings.Contains(plain, " · Fault 0700_8011") || !strings.Contains(plain, " · "+outcome.label) {
 								continue
 							}
 							if strings.HasPrefix(plain, "> ") {

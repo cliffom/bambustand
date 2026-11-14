@@ -106,6 +106,28 @@ func (m Model) activityOutcome(entry notifications.Activity) string {
 	}
 }
 
+func (m Model) activityRow(entry notifications.Activity, width int, selected bool) string {
+	printerWidth, subjectWidth, outcomeWidth := activityColumnWidths(width)
+	marker := "  "
+	if selected {
+		marker = "> "
+	}
+	// Pad after ANSI-aware truncation: byte/rune lengths cannot align wide
+	// printer names. Selected rows own every field's foreground/background.
+	outcome := cell(entry.Outcome, outcomeWidth)
+	if !selected {
+		entry.Outcome = safe(entry.Outcome)
+		outcome = m.panelContent(m.activityOutcome(entry), outcomeWidth)
+	}
+	row := marker + entry.At.Local().Format("15:04:05") + " " +
+		cell(entry.Printer, printerWidth) + " · " + cell(entry.Subject, subjectWidth) + " · " + outcome
+	row = ansi.Truncate(row, max(0, width), "")
+	if selected {
+		return paintSurface(m.styles.selection.Render(row), m.styles.palette.SelectedText, m.styles.palette.SelectedBackground)
+	}
+	return row
+}
+
 func (m Model) notificationActivityView() string {
 	d := m.notificationActivity
 	width := max(1, m.dialogWidth()-2)
@@ -163,26 +185,7 @@ func (m Model) notificationActivityView() string {
 	} else {
 		start := max(0, d.index-visible+1)
 		for i := start; i < min(len(d.entries), start+visible); i++ {
-			entry := d.entries[i]
-			marker := "  "
-			if i == d.index {
-				marker = "> "
-			}
-			// Reserve the outcome column so long/untrusted printer names cannot hide it.
-			subject := ansi.Truncate(safe(entry.Subject), max(12, width/3), "…")
-			// The selected row owns its foreground. A nested outcome color may
-			// match the selection background in a user or bundled theme.
-			outcome := safe(entry.Outcome)
-			if i != d.index {
-				outcome = m.activityOutcome(entry)
-			}
-			suffix := " · " + subject + " · " + outcome
-			prefix := marker + entry.At.Local().Format("15:04:05") + " " + safe(entry.Printer)
-			row := ansi.Truncate(prefix, max(1, width-ansi.StringWidth(suffix)), "…") + suffix
-			if i == d.index {
-				row = paintSurface(m.styles.selection.Render(row), m.styles.palette.SelectedText, m.styles.palette.SelectedBackground)
-			}
-			lines = append(lines, row)
+			lines = append(lines, m.activityRow(d.entries[i], width, i == d.index))
 		}
 	}
 	for len(lines) < m.dialogHeight()-7 {

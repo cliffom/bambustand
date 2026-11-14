@@ -34,7 +34,7 @@ Clicking a notification focuses its page and inspects the matching printer's rep
 
 ## Change notifications in the TUI
 
-[Config / Alerts example](../../assets/screenshots/tui-alerts.png) · [Status / Feedback example](../../assets/screenshots/tui-status.png) · [Notification activity example](../../assets/screenshots/tui-activity.png)
+[Config / Alerts example](../../assets/screenshots/tui-alerts.png) · [Status / Feedback example](../../assets/screenshots/tui-status.png) · [Synthetic notification activity example](../../assets/screenshots/tui-activity-columns.png)
 
 
 Press `,` from any dashboard panel to open centered **Config** over the dimmed farm. Edits save immediately; there is no separate Save or Apply step. `Tab` / `Shift+Tab` changes between General, Alerts, Printers, and Web Server. Use `↑` / `↓` (or `j` / `k`) to select a row; `Home` / `End` and `PgUp` / `PgDown` jump within the section. The selected row scrolls into view. `Enter` / `Space` activates a control; `←` / `→` (or `h` / `l`) changes values. `Esc` / `,` closes Config; close it before quitting. The footer explains the selected control and appends test feedback after a dot. Navigation and close keys appear below the header.
@@ -69,6 +69,8 @@ The view retains the last **100 decision records in memory**, including decision
 | Suppressed | Delivery was withheld because of reviews, preferences, snoozing, deduplication, completion baselines/missing identity, or changed/unavailable telemetry |
 | Paused | Identity storage, capacity, or queue failure paused delivery; monitoring continues |
 | Status | Notification ownership changed, recovery was requested, or related reports are being collected |
+
+Activity rows align time, printer, subject and outcome in consistent columns. Long names and subjects truncate to the available column width; outcomes stay visible at the [minimum terminal size](../../assets/screenshots/tui-activity-columns-compact.png).
 
 The selected activity row uses the theme's selection text/background colors for its outcome as well as its other fields. Unselected outcomes retain their semantic colors; outcome labels always remain explicit. Each selected row explains the applicable reason and recovery guidance. The ownership line identifies this TUI as the delivery owner, a standby behind another TUI, or a muted observer. Fresh ownership/standby/observer/recovery messages use prominent informational text; they describe coordination, not a printer fault or a delivered notification. An already-reserved attempt may come from an earlier session; its outcome remains uncertain. Failed and unconfirmed attempts have **no automatic retry**. Corrupt/busy storage and capacity exhaustion are distinguished; restarting alone does not free exhausted live capacity; see [history retention and capacity recovery](#notification-history-and-capacity). Activity cannot diagnose whether Focus hid an accepted banner. Quiet-hours suppression and optional grouping across reports are also shown; see [Quiet hours and burst grouping](#quiet-hours-and-burst-grouping).
 
