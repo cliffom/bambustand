@@ -6,6 +6,10 @@ Follow [UI direction](ui-direction.md) for visual and interaction contracts and 
 
 Follow [notification strategy](notification-strategy.md) for eligibility intent and cross-platform direction; keep implementation details here and [user controls](../user/alerts.md) aligned with it.
 
+## Terminal presentation
+
+`internal/ui/modal.go` owns bounded dialog geometry and opaque composition against the complete terminal viewport. Dialog synchronization and paging use the same interior dimensions; the dashboard keeps full-terminal coordinates. Rendering recolors a value copy of the dashboard and its value-owned viewports without modifying dialog caches, session state or ownership. SGR resets isolate inherited surfaces. The existing serial router owns input and suspended returns throughout resizing and background updates. Conventional borders require no terminal negotiation; see the [cell-edge assessment](cell-border-assessment.md).
+
 ## State and persistence
 
 The CLI supplies no session credentials or account information to About. Theme loading retains its bundled name or resolved custom-file source separately from the JSON display name and saved configuration.

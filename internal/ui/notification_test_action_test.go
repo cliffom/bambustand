@@ -35,7 +35,7 @@ func TestConfigNotificationProbeUsesSoundSnapshotWithoutSaving(t *testing.T) {
 		if calls != 0 || !m.notificationTestPending || m.ConfigRevision() != 0 {
 			t.Fatal("probe ran in reducer or changed config")
 		}
-		if !strings.Contains(ansi.Strip(m.View()), "Sending") {
+		if !strings.Contains(ansi.Strip(activeView(m)), "Sending") {
 			t.Fatal("pending status missing")
 		}
 		next, duplicate := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -47,12 +47,12 @@ func TestConfigNotificationProbeUsesSoundSnapshotWithoutSaving(t *testing.T) {
 		msg := cmd()
 		next, _ = m.Update(msg)
 		m = next.(Model)
-		if calls != 1 || m.notificationTestPending || !strings.Contains(ansi.Strip(m.View()), "accepted by macOS") || m.alertPrefs.DesktopNotifications {
+		if calls != 1 || m.notificationTestPending || !strings.Contains(ansi.Strip(activeView(m)), "accepted by macOS") || m.alertPrefs.DesktopNotifications {
 			t.Fatal("probe outcome or opt-out independence incorrect")
 		}
 		for _, width := range []int{60, 120} {
 			m = resizeModel(m, width, 18)
-			rows := strings.Split(ansi.Strip(m.View()), "\n")
+			rows := strings.Split(ansi.Strip(activeView(m)), "\n")
 			if strings.Contains(strings.Join(rows[:len(rows)-1], "\n"), "Test accepted") || !strings.Contains(rows[len(rows)-1], " · "+m.notificationTestStatus) {
 				t.Fatal("test result belongs after helper text in the status bar")
 			}
@@ -128,7 +128,7 @@ func TestConfigNotificationProbeFailureAndHiddenAction(t *testing.T) {
 	m = next.(Model)
 	next, _ = m.Update(cmd())
 	m = next.(Model)
-	if m.notificationTestPending || !strings.Contains(ansi.Strip(m.View()), "Test failed") {
+	if m.notificationTestPending || !strings.Contains(ansi.Strip(activeView(m)), "Test failed") {
 		t.Fatal("failure not visible")
 	}
 	m.now = m.now.Add(notificationTestFeedbackLifetime)
@@ -137,7 +137,7 @@ func TestConfigNotificationProbeFailureAndHiddenAction(t *testing.T) {
 	}
 	for _, size := range [][2]int{{60, 18}, {120, 32}} {
 		m = resizeModel(m, size[0], size[1])
-		rows := strings.Split(ansi.Strip(m.View()), "\n")
+		rows := strings.Split(ansi.Strip(activeView(m)), "\n")
 		if !strings.Contains(rows[1], "Esc / ,") || strings.Contains(rows[len(rows)-1], "Esc / ,") {
 			t.Fatal("close keys belong in the header only")
 		}

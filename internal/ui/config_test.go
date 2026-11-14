@@ -89,7 +89,7 @@ func TestConfigTogglesStartAndStopDeliveryImmediately(t *testing.T) {
 	for _, size := range []tea.WindowSizeMsg{{Width: 60, Height: 18}, {Width: 120, Height: 32}, {Width: 59, Height: 17}} {
 		next, _ := m.Update(size)
 		m = next.(Model)
-		view := ansi.Strip(m.View())
+		view := ansi.Strip(activeView(m))
 		for _, line := range strings.Split(view, "\n") {
 			if ansi.StringWidth(line) > size.Width {
 				t.Fatal("config exceeds width")
@@ -114,7 +114,7 @@ func TestConfigSaveCoalescesAndBlocksQuit(t *testing.T) {
 	var saved []config.Config
 	m = m.WithConfigPersistence("synthetic.toml", func(rules config.Config) error { saved = append(saved, rules); return nil })
 	m = openAlertConfig(m)
-	if strings.Contains(ansi.Strip(m.View()), "Saved") {
+	if strings.Contains(ansi.Strip(activeView(m)), "Saved") {
 		t.Fatal("idle Config should not show Saved")
 	}
 	// Dispatch explicitly: persistence must not call the writer in the reducer.
@@ -123,7 +123,7 @@ func TestConfigSaveCoalescesAndBlocksQuit(t *testing.T) {
 	if len(saved) != 0 || !m.ConfigWrites().InFlight {
 		t.Fatal("save ran in reducer or was not queued")
 	}
-	if strings.Contains(ansi.Strip(m.View()), "Saving…") {
+	if strings.Contains(ansi.Strip(activeView(m)), "Saving…") {
 		t.Fatal("pending saves should remain silent")
 	}
 	first := m.ConfigRevision()
@@ -160,10 +160,10 @@ func TestConfigSaveFailureIsVisibleAndExplicitlyRetried(t *testing.T) {
 	})
 	m = openAlertConfig(m)
 	m = persistenceKey(m, "enter")
-	if writes != 1 || !m.alertPrefs.DesktopNotifications || !strings.Contains(ansi.Strip(m.View()), "Save failed") || !m.HasUnsavedPersistence() {
+	if writes != 1 || !m.alertPrefs.DesktopNotifications || !strings.Contains(ansi.Strip(activeView(m)), "Save failed") || !m.HasUnsavedPersistence() {
 		t.Fatal("failed save did not preserve session setting and warning")
 	}
-	if !strings.Contains(m.View(), m.styles.err.Render("Save failed · r retry; changes may be lost on exit.")) || !strings.Contains(m.View(), "38;2;255;128;135") {
+	if !strings.Contains(activeView(m), m.styles.err.Render("Save failed · r retry; changes may be lost on exit.")) || !strings.Contains(activeView(m), "38;2;255;128;135") {
 		t.Fatal("save failure should use the shared red failure style")
 	}
 	m = persistenceKey(m, "down")
@@ -192,7 +192,7 @@ func TestConfigGlobalTogglePreservesPrinterOverride(t *testing.T) {
 	if m.alertPrefs.DesktopNotifications || !client.inputs[len(client.inputs)-1].Policies["TEST"].Desktop {
 		t.Fatal("global toggle overwrote a printer override")
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "Printers") {
+	if !strings.Contains(ansi.Strip(activeView(m)), "Printers") {
 		t.Fatal("override behavior is hidden")
 	}
 }
@@ -205,7 +205,7 @@ func TestConfigFooterUsesOnlyHelpWithStorageWarnings(t *testing.T) {
 			if failed {
 				m.configStorageError = "Config save failed"
 			}
-			rows := strings.Split(ansi.Strip(m.View()), "\n")
+			rows := strings.Split(ansi.Strip(activeView(m)), "\n")
 			footer := rows[len(rows)-1]
 			if strings.TrimSpace(footer) != "Show macOS alerts while this TUI runs." {
 				t.Fatal("Config footer should contain only selected-option help")
@@ -242,7 +242,7 @@ func TestConfigFooterExplainsSelectedOption(t *testing.T) {
 			"Alert on pauses without a classified cause.",
 			"Test delivery using the current sound.",
 		} {
-			rows := strings.Split(ansi.Strip(m.View()), "\n")
+			rows := strings.Split(ansi.Strip(activeView(m)), "\n")
 			last := rows[len(rows)-1]
 			if strings.TrimSpace(last) != description {
 				t.Fatalf("selected option helper missing at %v: %q", size, last)
@@ -254,7 +254,7 @@ func TestConfigFooterExplainsSelectedOption(t *testing.T) {
 		}
 		m = key(m, "up")
 		m.notificationTestPending = true
-		rows := strings.Split(ansi.Strip(m.View()), "\n")
+		rows := strings.Split(ansi.Strip(activeView(m)), "\n")
 		if !strings.Contains(rows[len(rows)-1], "closing cancels") {
 			t.Fatal("pending test helper missing")
 		}

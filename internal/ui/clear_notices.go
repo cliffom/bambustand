@@ -66,7 +66,7 @@ func (m Model) clearNoticesView() string {
 		persistence = "Demo dismissals apply only to this session."
 	}
 	return m.fullView([]string{
-		m.styles.warning.Bold(true).Render("CLEAR ALL NOTICES?"), "",
+		m.styles.warning.Bold(true).Render("CLEAR ALL NOTICES?"),
 		fmt.Sprintf("Dismiss locally: %d visible active notices", len(d.active)),
 		fmt.Sprintf("Remove: %d recent session events", len(d.events)),
 		"Scope: entire account farm (all printers and filters).", "",
@@ -74,7 +74,7 @@ func (m Model) clearNoticesView() string {
 		"New notices and events are kept. Telemetry continues.", "",
 		persistence,
 		"Resolved conditions return unreviewed if they recur.",
-		"No printer commands are sent or faults resolved.", "",
+		"No printer commands are sent or faults resolved.",
 		"y: clear all notices     n / Esc: cancel",
 	}, "y clear notices  n/Esc cancel")
 }

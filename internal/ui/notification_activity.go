@@ -10,8 +10,8 @@ import (
 	"github.com/cliffom/bambustand/internal/notifications"
 )
 
-// Five header rows, one spacer, four detail rows, and the footer.
-const activityReservedRows = 11
+// Five header rows, one spacer, five detail rows, and the footer.
+const activityReservedRows = 12
 
 type notificationActivityDialog struct {
 	entries  []notifications.Activity
@@ -56,7 +56,7 @@ func (m *Model) syncNotificationActivity() {
 
 func (m *Model) notificationActivityKey(key string, _ tea.Msg) tea.Cmd {
 	d := m.notificationActivity
-	page := max(1, m.height-activityReservedRows)
+	page := max(1, m.dialogHeight()-activityReservedRows)
 	switch key {
 	case keyEscape, keyNotificationActivity:
 		m.closeDialog()
@@ -108,7 +108,7 @@ func (m Model) activityOutcome(entry notifications.Activity) string {
 
 func (m Model) notificationActivityView() string {
 	d := m.notificationActivity
-	width := max(1, m.width-2)
+	width := max(1, m.dialogWidth()-2)
 	hints := "↑/↓ select  PgUp/PgDn page  N/Esc close"
 	if m.notificationRecoveryAvailable() {
 		hints = "↑/↓ select  PgUp/PgDn  r recheck  N/Esc close"
@@ -141,7 +141,7 @@ func (m Model) notificationActivityView() string {
 		ownership = "Desktop delivery unavailable in this session"
 	}
 	lines := []string{m.styles.accent.Bold(true).Render("NOTIFICATION ACTIVITY"), hint, history, summary, ownerStyle.Render(ansi.Truncate(ownership, width, "…"))}
-	visible := max(1, m.height-activityReservedRows)
+	visible := max(1, m.dialogHeight()-activityReservedRows)
 	if len(d.entries) == 0 {
 		lines = append(lines, "No live notification decisions yet.")
 		explanation := "Waiting for evaluated incidents or print completions."
@@ -185,7 +185,7 @@ func (m Model) notificationActivityView() string {
 			lines = append(lines, row)
 		}
 	}
-	for len(lines) < m.height-6 {
+	for len(lines) < m.dialogHeight()-7 {
 		lines = append(lines, "")
 	}
 	lines = append(lines, "")
@@ -198,7 +198,7 @@ func (m Model) notificationActivityView() string {
 		detail += " · " + safe(entry.Subject)
 		lines = append(lines, ansi.Truncate(detail, width, "…"))
 		reason := strings.Split(ansi.Wrap(notifications.ReasonText(entry.Reason), width, ""), "\n")
-		for i := range 2 {
+		for i := range 3 {
 			if i < len(reason) {
 				lines = append(lines, reason[i])
 			} else {

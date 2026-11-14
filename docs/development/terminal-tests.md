@@ -44,6 +44,8 @@ The CLI's signal context owns SIGINT/SIGTERM; Bubble Tea's duplicate signal hand
 
 Assertions wait for newly emitted semantic text or explicit completion signals, with five-second step bounds and a thirty-second child lifetime limit. They use no timing sleeps or full ANSI-frame golden files. The transcript is capped at 1 MiB. A minimal cursor-position reply lets startup color probes fall back from unsupported OSC queries; the harness does not implement a screen emulator.
 
+Centered modals leave some dashboard rows untouched. On close, wait for restored content that was covered by the modal (such as Printer Details), rather than a header that can legitimately be omitted by the renderer’s line diff. Help End checks use its final close-help guidance because shorter modal viewports may scroll past the earlier dashboard-quit entry.
+
 Wait for the dashboard to render after Escape before sending `q`; adjacent Escape and `q` bytes can decode as Alt+Q instead of two keys.
 
 Do not send keys with no observable acknowledgement immediately before resizing: PTY writes and SIGWINCH do not guarantee reducer processing order, so queued keys can arrive after the supported size is restored. Keep hidden-input guard assertions in the synchronous UI reducer tests; PTY tests verify the fallback screen and restored dialog state.

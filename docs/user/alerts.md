@@ -34,7 +34,10 @@ Clicking a notification focuses its page and inspects the matching printer's rep
 
 ## Change notifications in the TUI
 
-Press `,` from any dashboard panel to open **Config**. `Tab` / `Shift+Tab` changes between General, Alerts, and Printers. Use `↑` / `↓` (or `j` / `k`) to select a row; `Home` / `End` and `PgUp` / `PgDown` jump within the section. The selected row scrolls into view. `Enter` / `Space` activates a control; `←` / `→` (or `h` / `l`) changes values. `Esc` / `,` closes Config; close it before quitting. The footer explains the selected control and appends test feedback after a dot. Navigation and close keys appear below the header.
+[Config / Alerts example](../../assets/screenshots/tui-alerts.png) · [Status / Feedback example](../../assets/screenshots/tui-status.png) · [Notification activity example](../../assets/screenshots/tui-activity.png)
+
+
+Press `,` from any dashboard panel to open centered **Config** over the dimmed farm. Edits save immediately; there is no separate Save or Apply step. `Tab` / `Shift+Tab` changes between General, Alerts, Printers, and Web Server. Use `↑` / `↓` (or `j` / `k`) to select a row; `Home` / `End` and `PgUp` / `PgDown` jump within the section. The selected row scrolls into view. `Enter` / `Space` activates a control; `←` / `→` (or `h` / `l`) changes values. `Esc` / `,` closes Config; close it before quitting. The footer explains the selected control and appends test feedback after a dot. Navigation and close keys appear below the header.
 
 | Section | Controls |
 | --- | --- |

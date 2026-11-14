@@ -20,7 +20,8 @@ For installation, the demo, and your first connection, start with the [project R
 - [UI direction](development/ui-direction.md): visual, keyboard, layout, and interaction contracts with review evidence
 - [Documentation direction](development/documentation-direction.md): document ownership, change obligations, and automated checks
 - [Terminal smoke tests](development/terminal-tests.md): PTY coverage and test harness
-- [TUI refresh design review](development/design/tui-refresh-review/index.html): proposed screen concepts, compact layout studies, feedback export, and draft milestone scope; not implemented UI
+- [Cell-edge border assessment](development/cell-border-assessment.md): isolated Go-stack experiment, deferral and adoption requirements
+- [TUI refresh design review](development/design/tui-refresh-review/index.html): approved screen concepts, compact layout studies and feedback export; generated design references rather than application captures
 - [Live-validation record](development/validation.md): observed hardware results, limitations, and remaining checks
 - [Publishing releases](development/publishing.md): version preparation, packaging, draft verification, and publishing
 

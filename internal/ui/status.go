@@ -114,7 +114,7 @@ func (m *Model) statusKey(key string, msg tea.Msg) tea.Cmd {
 }
 
 func (m *Model) syncStatus() {
-	m.status.Width, m.status.Height = max(1, m.width-2), max(1, m.height-4)
+	m.status.Width, m.status.Height = max(1, m.dialogWidth()-2), max(1, m.dialogHeight()-4)
 	lines := []string{
 		"Local feedback only. Printer faults remain in Notices.",
 		"Notice saves: " + m.ReviewSaveState(), "Snooze saves: " + m.SnoozeSaveState(), "",

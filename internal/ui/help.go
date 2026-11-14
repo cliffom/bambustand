@@ -8,7 +8,7 @@ import (
 )
 
 func (m *Model) syncHelp() {
-	m.help.Width, m.help.Height = max(1, m.width-2), max(1, m.height-4)
+	m.help.Width, m.help.Height = max(1, m.dialogWidth()-2), max(1, m.dialogHeight()-4)
 	lines := []string{
 		"↑ / ↓  j / k   Select printer/notice; scroll printer details",
 		"Tab / Shift+Tab Switch between printers, details, and notices",
@@ -41,6 +41,7 @@ func (m *Model) syncHelp() {
 		"Print outcomes explain pauses/stops and verified cancellation; raw states and individual notices remain accessible.",
 		"Notifications collect attention reports for six seconds per printer; cancellation uses one failed-state outcome.",
 		"Only reported FINISH confirms completion. Last-known outcomes do not confirm current state or repair.",
+		"Dialogs stay centered over a dimmed farm; telemetry continues. Resize preserves your place.",
 		"? or Esc closes help. Scroll to read all controls.",
 	}
 	m.help.SetContent(ansi.Wrap(strings.Join(lines, "\n"), m.help.Width, ""))

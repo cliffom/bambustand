@@ -30,7 +30,7 @@ func TestActivityExplainsSelectedDecisionAndKeepsSelectionThroughUpdates(t *test
 	if m.dialog.active != dialogNotificationActivity || m.notificationActivity.selected != 5 {
 		t.Fatal("activity did not open at newest")
 	}
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(activeView(m))
 	for _, text := range []string{"NOTIFICATION ACTIVITY", "macOS desktop", "Fault 0700_8011", "Suppressed", "This printer is snoozed.", "Seen 3"} {
 		if !strings.Contains(view, text) {
 			t.Fatal("missing activity detail", text)
@@ -80,19 +80,23 @@ func TestActivityOutcomesGroupingBoundsAndSanitization(t *testing.T) {
 		entry.GroupSize, entry.Request = 3, 9
 		entry.Class = "possible_spaghetti"
 		m = key(m, "N")
-		view := ansi.Strip(m.View())
+		view := ansi.Strip(activeView(m))
 		for _, text := range []string{"Accepted", "banner and sound are unconfirmed", "Request #9", "3 notices grouped", "possible spaghetti"} {
 			if !strings.Contains(strings.Join(strings.Fields(view), " "), text) {
 				t.Fatal(size, "missing", text, "\n"+view)
 			}
 		}
 		for range 25 {
-			view = m.View()
+			view = activeView(m)
 			if strings.Contains(view, "\x1b[2J") {
 				t.Fatal("terminal control escaped sanitization")
 			}
 			lines := strings.Split(ansi.Strip(view), "\n")
-			if len(lines) != size[1] {
+			wantHeight := m.height
+			if m.terminalFits() {
+				wantHeight = m.dialogHeight()
+			}
+			if len(lines) != wantHeight {
 				t.Fatal("activity exceeds height", size, len(lines))
 			}
 			for _, line := range lines {
@@ -112,7 +116,7 @@ func TestActivityOutcomesGroupingBoundsAndSanitization(t *testing.T) {
 		for _, outcome := range []string{notifications.OutcomeFailed, notifications.OutcomeUnconfirmed, notifications.OutcomePaused} {
 			client.status.History[24].Outcome = outcome
 			m = key(m, "home")
-			if !strings.Contains(ansi.Strip(m.View()), outcome) {
+			if !strings.Contains(ansi.Strip(activeView(m)), outcome) {
 				t.Fatal("outcome hidden", outcome)
 			}
 		}
@@ -121,7 +125,7 @@ func TestActivityOutcomesGroupingBoundsAndSanitization(t *testing.T) {
 
 func TestEmptyActivityAvailabilityAndHiddenInput(t *testing.T) {
 	m := key(resizeModel(demoModel(), 60, 18), "N")
-	if !strings.Contains(ansi.Strip(m.View()), "No live notification decisions yet.") || !strings.Contains(ansi.Strip(m.View()), "clears on restart") {
+	if !strings.Contains(ansi.Strip(activeView(m)), "No live notification decisions yet.") || !strings.Contains(ansi.Strip(activeView(m)), "clears on restart") {
 		t.Fatal("empty activity guidance missing")
 	}
 	m = key(m, "esc")
@@ -157,7 +161,7 @@ func TestEmptyActivityAvailabilityAndHiddenInput(t *testing.T) {
 	m = key(m, "N")
 	client.status.History = nil
 	m.syncNotificationActivity()
-	if !strings.Contains(ansi.Strip(m.View()), "Desktop delivery is off") {
+	if !strings.Contains(ansi.Strip(activeView(m)), "Desktop delivery is off") {
 		t.Fatal("opt-out empty state missing")
 	}
 }
@@ -180,13 +184,17 @@ func TestActivityOwnershipAndRecoveryAreVisibleAndUseFreshPolicy(t *testing.T) {
 		for _, tc := range cases {
 			client.status = tc.status
 			m.syncNotificationActivity()
-			view := ansi.Strip(m.View())
+			view := ansi.Strip(activeView(m))
 			eligible := !tc.status.Pending && !tc.status.Recovering && (tc.status.Disabled || tc.status.Ownership == notifications.OwnershipStandby)
 			if !strings.Contains(view, tc.label) || strings.Contains(view, "r recheck") != eligible {
 				t.Fatal("ownership/recovery hidden", size, view)
 			}
 			lines := strings.Split(view, "\n")
-			if len(lines) != size[1] {
+			wantHeight := m.height
+			if m.terminalFits() {
+				wantHeight = m.dialogHeight()
+			}
+			if len(lines) != wantHeight {
 				t.Fatal("ownership state height overflow")
 			}
 			for _, line := range lines {
@@ -224,7 +232,7 @@ func TestQuietActivityExplanationAtSupportedSizes(t *testing.T) {
 		m, client := activityModel(1)
 		client.status.History[0].Reason = notifications.ReasonQuiet
 		m = key(resizeModel(m, size[0], size[1]), "N")
-		view := ansi.Strip(m.View())
+		view := ansi.Strip(activeView(m))
 		for _, text := range []string{"Quiet hours", "no replay or summary"} {
 			if !strings.Contains(strings.Join(strings.Fields(view), " "), text) {
 				t.Fatal(size, "missing quiet policy", view)
@@ -250,12 +258,16 @@ func TestActivityCapacityLayouts(t *testing.T) {
 				client.status.Capacity = notification_state.Capacity{Entries: 3500, Limit: 4096}
 				m = key(m, "N")
 				m = resizeModel(m, size[0], size[1])
-				view := ansi.Strip(m.View())
+				view := ansi.Strip(activeView(m))
 				if size[0] >= 60 && !strings.Contains(view, "IDs 3500/4096 !") {
 					t.Fatal("capacity hidden", size, view)
 				}
 				lines := strings.Split(view, "\n")
-				if len(lines) != size[1] {
+				wantHeight := m.height
+				if m.terminalFits() {
+					wantHeight = m.dialogHeight()
+				}
+				if len(lines) != wantHeight {
 					t.Fatal("height", size, len(lines))
 				}
 				for _, line := range lines {

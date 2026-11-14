@@ -272,7 +272,7 @@ func TestPaletteRolesReachFieldsFocusSelectionAndFilament(t *testing.T) {
 	assertPaint(t, m.activityOutcome(notifications.Activity{Outcome: notifications.OutcomeFailed}), "Failed", p.Error, "", false)
 	assertPaint(t, m.activityOutcome(notifications.Activity{Outcome: notifications.OutcomeUnconfirmed}), "Unconfirmed", p.Warning, "", false)
 	m = key(m, "m")
-	assertPaint(t, m.View(), "┌", p.Border, p.Background, false)
+	assertPaint(t, m.modalView(m.filamentView()), "AMS / FILAMENT", p.Accent, p.Background, true)
 	m = key(m, "esc")
 	m.setToast(feedbackInfo, "Palette information")
 	m = key(m, "ctrl+e")

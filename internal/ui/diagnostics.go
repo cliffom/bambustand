@@ -96,7 +96,7 @@ func (m *Model) syncExport() {
 	if d == nil {
 		return
 	}
-	d.view.Width, d.view.Height = max(1, m.width-2), max(1, m.height-6)
+	d.view.Width, d.view.Height = max(1, m.dialogWidth()-2), max(1, m.dialogHeight()-6)
 	name := "Printer no longer available"
 	if p := m.Farm.Printers[d.printerID]; p != nil {
 		name = p.Name

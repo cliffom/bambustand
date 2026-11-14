@@ -17,7 +17,7 @@ func TestConfigGeneralValidationAndRegionIsolation(t *testing.T) {
 	m := demoModel().WithConfiguration(config.Config{Region: config.RegionGlobal, LowFilamentPercent: 10, Alerts: config.DefaultAlerts()})
 	m = key(m, ",")
 	m = key(m, "enter")
-	if m.configRegion != config.RegionChina || m.activeRegion != config.RegionGlobal || !strings.Contains(ansi.Strip(m.View()), "restart + login required") {
+	if m.configRegion != config.RegionChina || m.activeRegion != config.RegionGlobal || !strings.Contains(ansi.Strip(activeView(m)), "restart + login required") {
 		t.Fatal("region switched live account or hid restart requirement")
 	}
 	m = key(m, "down")
@@ -172,7 +172,7 @@ func TestConfigAbsentPrintersAndStableTargetThroughDiscovery(t *testing.T) {
 	m.alertPrefs.Printers = map[string]config.AlertOverride{"ABSENT": {AutomaticModals: &enabled}}
 	m = key(key(key(m, ","), "tab"), "tab")
 	m = key(m, "left") // First discovered printer wraps to saved absent printer.
-	if m.configTarget() != "ABSENT" || !strings.Contains(ansi.Strip(m.View()), "(absent)") {
+	if m.configTarget() != "ABSENT" || !strings.Contains(ansi.Strip(activeView(m)), "(absent)") {
 		t.Fatal("saved absent printer is inaccessible")
 	}
 	m = key(m, "down")
@@ -226,9 +226,9 @@ func TestConfigAllSectionsBoundsScrollingAndHiddenEditing(t *testing.T) {
 				t.Fatal("Tab skipped section")
 			}
 			for row := range m.configRowCount() {
-				view := ansi.Strip(m.View())
+				view := ansi.Strip(activeView(m))
 				lines := strings.Split(view, "\n")
-				if len(lines) != size[1] {
+				if len(lines) != m.dialogHeight() {
 					t.Fatal("Config height exceeds terminal")
 				}
 				for _, line := range lines {
@@ -268,7 +268,7 @@ func TestConfigAllSectionsBoundsScrollingAndHiddenEditing(t *testing.T) {
 func TestConfigEmptyPrinterSectionAndUntrustedNames(t *testing.T) {
 	m := New(farm.New(10), nil, nil, true)
 	m = key(key(key(m, ","), "tab"), "tab")
-	if !strings.Contains(ansi.Strip(m.View()), "No discovered or configured printers") {
+	if !strings.Contains(ansi.Strip(activeView(m)), "No discovered or configured printers") {
 		t.Fatal("empty printer guidance missing")
 	}
 	revision := m.ConfigRevision()
@@ -280,11 +280,11 @@ func TestConfigEmptyPrinterSectionAndUntrustedNames(t *testing.T) {
 	}
 	next, _ := m.Update(monitor.Event{Kind: monitor.EventDevices, Devices: []farm.Device{{ID: "SAFE", Name: "name\x1b[2J\nunsafe", Online: true}}, At: m.now})
 	m = next.(Model)
-	if m.configTarget() != "SAFE" || strings.Contains(m.View(), "\x1b[2J") || len(strings.Split(ansi.Strip(m.View()), "\n")) != m.height {
+	if m.configTarget() != "SAFE" || strings.Contains(activeView(m), "\x1b[2J") || len(strings.Split(ansi.Strip(activeView(m)), "\n")) != m.dialogHeight() {
 		t.Fatal("discovery failed to initialize target or allowed terminal injection")
 	}
 	m = key(m, "end")
-	if !strings.Contains(strings.Split(ansi.Strip(m.View()), "\n")[0], "name") {
+	if !strings.Contains(strings.Split(ansi.Strip(activeView(m)), "\n")[0], "name") {
 		t.Fatal("scrolling hid the target context")
 	}
 }

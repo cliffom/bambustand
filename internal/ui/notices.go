@@ -314,8 +314,8 @@ func (m *Model) syncInspector() {
 	} else if item.EventID != 0 {
 		lines = append(lines, "", "c: remove this event from the current session's history")
 	}
-	m.inspection.Width = max(1, m.width-dialogBorderInset)
-	m.inspection.Height = max(1, m.height-6)
+	m.inspection.Width = max(1, m.dialogWidth()-dialogBorderInset)
+	m.inspection.Height = max(1, m.dialogHeight()-6)
 	m.inspection.SetContent(wrapLines(lines, m.inspection.Width))
 }
 
@@ -351,22 +351,24 @@ func (m Model) fullView(lines []string, hints string) string {
 			essential = "Enter export  Esc close"
 		}
 	}
-	return m.frame(lines, m.statusFooter(hints, essential, m.width-2))
+	return m.frame(lines, m.statusFooter(hints, essential, m.dialogWidth()-2))
 }
 
 func (m Model) frame(lines []string, footer string) string {
 	rows := strings.Split(strings.Join(lines, "\n"), "\n")
 	if len(rows) > 0 {
-		rows[0] = m.versionedTitle(rows[0], m.width)
+		rows[0] = m.versionedTitle(rows[0], m.dialogWidth())
 	}
-	if len(rows) > max(0, m.height-1) {
-		rows = rows[:max(0, m.height-1)]
+	if len(rows) > max(0, m.dialogHeight()-1) {
+		rows = rows[:max(0, m.dialogHeight()-1)]
 	}
-	for len(rows) < m.height-1 {
+	for len(rows) < m.dialogHeight()-1 {
 		rows = append(rows, "")
 	}
-	rows = append(rows, m.footerRow(footer))
-	return fit(strings.Join(rows, "\n"), m.width, m.height)
+	footerModel := m
+	footerModel.width = m.dialogWidth()
+	rows = append(rows, footerModel.footerRow(footer))
+	return fit(strings.Join(rows, "\n"), m.dialogWidth(), m.dialogHeight())
 }
 
 func (m Model) clearHistoryView() string {

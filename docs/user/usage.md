@@ -73,9 +73,9 @@ region = "global" # or "china"
 low_filament_percent = 10
 ```
 
-![Config screen showing the canonical application directory in a synthetic macOS home](../../assets/screenshots/config-storage.png)
+![Centered Config over a dimmed synthetic farm, with General settings, the selected row and configuration path](../../assets/screenshots/config-storage.png)
 
-Config at 120 × 32 with a synthetic home directory; `--config-path` prints your full default path. Narrow terminals truncate the displayed path.
+Config at 150 × 44 using an explicit temporary demo configuration; `--config-path` prints your full default path. Dialogs stay centered on opening and resize, over a dimmed farm. Their footer stays inside the frame; telemetry and saves continue, and your input, selection and scroll are preserved. Narrow terminals truncate the displayed path.
 
 The configuration contains no credentials. Each region uses a separate saved session. All printers discovered on the account appear in the dashboard.
 

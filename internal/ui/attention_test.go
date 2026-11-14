@@ -409,9 +409,8 @@ func TestAttentionHierarchyAndLongContent(t *testing.T) {
 		if strings.Count(text, "First observed:") != len(group.items) || !strings.Contains(text, "Next:") {
 			t.Fatal("independent times or intervention missing")
 		}
-		view := strings.Split(ansi.Strip(m.View()), "\n")
 		for _, label := range []string{"a acknowledge", "c hide", "s snooze", "Esc close"} {
-			if !strings.Contains(view[len(view)-1], label) {
+			if !strings.Contains(lastRow(m), label) {
 				t.Fatalf("footer lost %q at %v", label, size)
 			}
 		}
@@ -419,7 +418,7 @@ func TestAttentionHierarchyAndLongContent(t *testing.T) {
 		if !strings.Contains(ansi.Strip(m.View()), group.name) {
 			t.Fatal("scroll hid the active printer")
 		}
-		if !strings.Contains(ansi.Strip(m.View()), "printer controls") {
+		if !strings.Contains(strings.Join(strings.Fields(ansi.Strip(activeView(m))), " "), "printer controls") {
 			t.Fatal("local action explanation is inaccessible")
 		}
 	}

@@ -10,6 +10,8 @@ The printer table's `JOB` column and printer details' `Job Name` use the reporte
 
 Printer details also show a **Print outcome** for paused/stopped, canceled and explicitly finished jobs, using the same interpretation as action-needed alerts and browser inspection. Cancellation keeps raw `FAILED` visible; last-known outcomes cannot establish the current state. All independent faults remain available in Notices. See [reading an alert](action-needed.md#reading-an-alert).
 
+Rounded panels group printers, details and notices. The focused panel has an accent outline and `›` marker; the selected printer retains its row highlight. Details and notices share a divider at 105 columns and above and stack below it. Inspection dialogs open centered over the dimmed farm and retain your place through resize.
+
 ## Summary definitions
 
 | Count | Meaning |

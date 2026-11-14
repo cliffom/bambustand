@@ -107,7 +107,7 @@ func (m *Model) syncServerStatus() {
 	if !m.terminalFits() {
 		return
 	}
-	m.serverStatus.Width, m.serverStatus.Height = max(1, m.width-2), max(1, m.height-4)
+	m.serverStatus.Width, m.serverStatus.Height = max(1, m.dialogWidth()-2), max(1, m.dialogHeight()-4)
 	state, kind := m.webLifecycle()
 	mode := "cloud"
 	if m.Demo {

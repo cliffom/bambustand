@@ -59,7 +59,7 @@ func newStyles(p Palette) *styles {
 		text:    text(p.Text), secondary: text(p.SecondaryText), muted: text(p.MutedText),
 		info: text(p.Info).Bold(true), accent: text(p.Accent), success: text(p.Success), warning: text(p.Warning), err: text(p.Error),
 		focus: text(p.Focus), selection: text(p.SelectedText).Background(p.SelectedBackground),
-		border: lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(p.Border).Padding(0, 1),
+		border: lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(p.Border).Padding(0, 1),
 		hotkey: text(p.Hotkey).Bold(true), footer: foot(p.FooterText),
 		footerHotkey: foot(p.FooterHotkey).Bold(true), footerSeparator: foot(p.FooterSeparator),
 		footerInfo: foot(p.FooterInfo).Bold(true), footerSuccess: foot(p.FooterSuccess).Bold(true),

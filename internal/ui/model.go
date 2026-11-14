@@ -439,12 +439,12 @@ func (m Model) tableRows() int {
 }
 
 func (m Model) panelSizes() (int, int, int) {
-	available := max(minimumPanelRows, m.height-m.tableRows()-dashboardReservedRows)
+	available := max(2, m.height-m.tableRows()-dashboardReservedRows-2)
 	if m.width >= sideBySideWidth {
-		left := (m.width - panelGap) * detailsWidthPercent / farm.MaxPercent
-		return left, m.width - left - panelGap, available
+		left := (m.width - 3) * detailsWidthPercent / farm.MaxPercent
+		return left, m.width - left - 3, available
 	}
-	return m.width, m.width, max(1, available/2)
+	return m.width - 2, m.width - 2, max(1, available/2)
 }
 
 func (m *Model) syncPanels() {
@@ -478,7 +478,7 @@ func (m Model) view() string {
 		return fit(m.versionedTitle("BambuStand / FARM", m.width)+"\n\nResize to at least 60 columns × 18 rows.\nPress q to quit.", m.width, m.height)
 	}
 	if m.hasOpenDialog() {
-		return route.view(m)
+		return m.modalView(route.view(m))
 	}
 	return m.dashboardView()
 }
@@ -487,24 +487,49 @@ func (m Model) dashboardView() string {
 	header := m.dashboardHeader()
 	lines := []string{header}
 	lines = append(lines, m.overviewLines()...)
-	lines = append(lines, "", m.section("PRINTERS", m.focus == panelPrinters, m.width), m.styles.secondary.Render(m.printerListStatus()), m.tableHeader())
+	list := m
+	list.width = max(1, m.width-2)
+	lines = append(lines, "", m.panelEdge("PRINTERS", m.focus == panelPrinters, m.width, "╭", "╮"), m.panelRow(list.styles.secondary.Render(list.printerListStatus()), m.width-2, m.focus == panelPrinters), m.panelRow(list.tableHeader(), m.width-2, m.focus == panelPrinters))
 	if len(m.printerIDs) == 0 {
-		lines = append(lines, m.styles.secondary.Render(m.emptyPrinterList()))
+		lines = append(lines, m.panelRow(m.styles.secondary.Render(m.emptyPrinterList()), m.width-2, m.focus == panelPrinters))
 	} else {
 		count := m.tableRows()
 		start := max(0, m.selection-count+1)
 		for i := start; i < min(len(m.printerIDs), start+count); i++ {
-			lines = append(lines, m.printerRow(i))
+			lines = append(lines, m.panelRow(list.printerRow(i), m.width-2, m.focus == panelPrinters))
 		}
 	}
-	lines = append(lines, "")
+	lines = append(lines, m.panelEdge("", m.focus == panelPrinters, m.width, "╰", "╯"))
 	left, right, _ := m.panelSizes()
 	if m.width >= sideBySideWidth {
-		titles := lipgloss.JoinHorizontal(lipgloss.Top, m.section("PRINTER DETAILS", m.focus == panelDetails, left), "   ", m.section("NOTICES", m.focus == panelNotices, right))
-		panels := lipgloss.JoinHorizontal(lipgloss.Top, m.details.View(), "   ", m.notices.View())
-		lines = append(lines, titles, panels)
+		// One shared divider and T-junctions, rather than two touching boxes.
+		lines = append(lines, m.panelEdge("PRINTER DETAILS", m.focus == panelDetails, left+2, "╭", "┬")+m.panelEdge("NOTICES", m.focus == panelNotices, right+1, "", "╮"))
+		lrows, rrows := strings.Split(m.details.View(), "\n"), strings.Split(m.notices.View(), "\n")
+		for i := 0; i < max(len(lrows), len(rrows)); i++ {
+			l, r := "", ""
+			if i < len(lrows) {
+				l = lrows[i]
+			}
+			if i < len(rrows) {
+				r = rrows[i]
+			}
+			lines = append(lines, m.joinedPanelRow(l, r, left, right))
+		}
+		lines = append(lines, m.panelEdge("", m.focus == panelDetails, left+2, "╰", "┴")+m.panelEdge("", m.focus == panelNotices, right+1, "", "╯"))
 	} else {
-		lines = append(lines, m.section("PRINTER DETAILS", m.focus == panelDetails, left), m.details.View(), m.section("NOTICES", m.focus == panelNotices, right), m.notices.View())
+		for _, panel := range []struct {
+			title, body string
+			focused     bool
+		}{
+			{"PRINTER DETAILS", m.details.View(), m.focus == panelDetails},
+			{"NOTICES", m.notices.View(), m.focus == panelNotices},
+		} {
+			lines = append(lines, m.panelEdge(panel.title, panel.focused, m.width, "╭", "╮"))
+			for _, row := range strings.Split(panel.body, "\n") {
+				lines = append(lines, m.panelRow(row, m.width-2, panel.focused))
+			}
+			lines = append(lines, m.panelEdge("", panel.focused, m.width, "╰", "╯"))
+		}
 	}
 	foot := "↑/↓ select  Tab panel  m filament  n decisions  s alerts  N activity  , config  D export  ? help  q quit"
 	if m.focus == panelDetails {

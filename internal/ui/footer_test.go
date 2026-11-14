@@ -20,13 +20,16 @@ func TestFooterStaysOneFullWidthRow(t *testing.T) {
 			m.syncPanels()
 			for _, message := range []string{"", "Export saved", strings.Repeat("Long warning ", 20)} {
 				m.toast = message
-				for _, view := range []string{m.View(), m.fullView([]string{"Notice details"}, "Esc back")} {
-					rows := strings.Split(view, "\n")
-					if len(rows) != m.height {
+				for _, frame := range []struct {
+					view          string
+					width, height int
+				}{{m.View(), m.width, m.height}, {m.styles.canvas(m.fullView([]string{"Notice details"}, "Esc back"), m.dialogWidth(), m.dialogHeight()), m.dialogWidth(), m.dialogHeight()}} {
+					rows := strings.Split(frame.view, "\n")
+					if len(rows) != frame.height {
 						t.Fatalf("size=%v: got %d rows", size, len(rows))
 					}
 					row := rows[len(rows)-1]
-					if ansi.StringWidth(row) != m.width || !strings.HasPrefix(ansi.Strip(row), " ") || !strings.HasSuffix(ansi.Strip(row), " ") {
+					if ansi.StringWidth(row) != frame.width || !strings.HasPrefix(ansi.Strip(row), " ") || !strings.HasSuffix(ansi.Strip(row), " ") {
 						t.Fatalf("size=%v: footer bounds/inset: %q", size, row)
 					}
 					if color == termenv.TrueColor && !strings.Contains(row, "48;2;58;70;81") {
@@ -94,10 +97,15 @@ func TestFooterBackgroundIsContinuousThroughFeedbackSeparators(t *testing.T) {
 						m.notificationTestStatus = "Test failed; run bambustand doctor --notify."
 					}
 				}
-				rows := strings.Split(m.View(), "\n")
+				rows := strings.Split(activeView(m), "\n")
 				row := rows[len(rows)-1]
 				backgrounds := footerCellBackgrounds(row)
-				if len(backgrounds) != size[0] {
+				if len(backgrounds) != func() int {
+					if m.hasOpenDialog() {
+						return m.dialogWidth()
+					}
+					return m.width
+				}() {
 					t.Fatalf("%s at %v: got %d footer cells", state, size, len(backgrounds))
 				}
 				for column, got := range backgrounds {
