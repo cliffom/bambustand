@@ -12,6 +12,7 @@ func (m *Model) syncHelp() {
 	lines := []string{
 		"↑ / ↓  j / k   Select printer/notice; scroll printer details",
 		"Tab / Shift+Tab Switch between printers, details, and notices",
+		"* after title  Focused panel when color is unavailable",
 		"g / G          First / last printer or notice",
 		"PgUp / PgDown  Scroll details or page through notices",
 		"Enter          Open selected notice; Esc/Enter returns",

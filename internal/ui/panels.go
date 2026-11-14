@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/muesli/termenv"
 )
 
 // dashboardPanel identifies a panel in Tab navigation order.
@@ -27,6 +28,9 @@ func (m Model) panelStroke(focused bool) lipgloss.Style {
 func (m Model) panelEdge(title string, focused bool, width int, left, right string) string {
 	label := ""
 	if title != "" {
+		if focused && lipgloss.ColorProfile() == termenv.Ascii {
+			title += " *"
+		}
 		label = ansi.Truncate("─ "+title+" ", max(0, width-2), "…")
 	}
 	return m.panelStroke(focused).Render(left + label + strings.Repeat("─", max(0, width-ansi.StringWidth(left+label+right))) + right)

@@ -8,6 +8,14 @@ Historical entries were consolidated from the [record at `2e9f74a`](https://gith
 
 
 
+
+## No-color dashboard panel focus (PR #197 review)
+
+- **Scope:** 2026-11-14 UTC; v0.12.0, uncommitted changes based on `5027cc3fd202`. Restores visible focus without color while retaining horizontal title segments and the requested removal of chevrons.
+- **Method:** macOS 27.2.1 arm64, Go 1.27.4. Extended the dashboard title interaction test across TrueColor, ANSI256 and no-color at 60×18, 104×32, 105×32 and 120×32, cycling Tab/Shift+Tab through telemetry updates and resize synchronization. Checks identify exactly the active title, retain printer selection and reject chevrons/ANSI in no-color output. The new assertion failed against the prior implementation. Ran formatting, pinned lint 2.15.0, vet, native build, `make docs-check` and `go test -race ./internal/ui ./cmd/bambustand`. `/tmp/capture-focus-review.py` captured the actual demo CLI PTY with NO_COLOR and automatic modals/desktop delivery disabled; `/tmp/render-focus-review.cjs` replayed the streams in xterm.js 5.5.0, Menlo 16px at 2× density using the same Playwright/Chrome environment as the refresh entry. Visually inspected all three focused panels at 60×18, Details/Notices at 120×32 and the 59×17 fallback for marker placement, row selection, readable controls and clipping.
+- **Result:** Listed checks passed. A `*` after the focused title follows panel navigation only in no-color mode. Added the actual-demo [compact no-color focus capture](../../assets/screenshots/tui-focus-no-color.png); updated farm-view guidance, in-app Help, UI direction and pending release notes. Removed stale farm-view prose describing the old chevron. README, usage, alerts/action-needed guides and other current captures remain accurate: existing dashboard captures use color, the no-color minimum-size warning has no panels, and Server Status has a neutral backdrop. No existing capture depicts the changed Help text. v0.12.0 remains prepared.
+- **Limits:** Synthetic terminal/automated evidence only; no live hardware, OS delivery or physical-terminal/font fidelity established. Temporary scripts, streams and other captures are unarchived. An initial race-test invocation overlapped temporary source restoration for the prior-head reproduction and failed compilation; the source was restored before final verification. Existing [remaining live checks](#remaining-live-checks) remain unchanged.
+
 ## Modal diagnostic isolation and shutdown wrapping (PR #197 review)
 
 - **Scope:** 2026-11-14 UTC; v0.12.0, uncommitted review fixes based on `1a73e745d9f3`. Server Status backdrop privacy and shutdown warning width; no domain, persistence or notification-policy changes.
