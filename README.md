@@ -18,11 +18,15 @@ BambuStand connects through **Bambu Cloud**, with displayed telemetry validated 
 
 A keyboard-driven workspace for your farm: move between printers, inspect job details and AMS filament, review action-needed notices with a shared print outcome and next step, and set alert preferences. Built-in and custom themes let you make it your own.
 
-![BambuStand v0.12.0 terminal dashboard at 150 columns by 44 rows, showing two synthetic printers, selected printer details, filament inventory, notices, and recent events.](assets/screenshots/farm.png)
+![BambuStand v0.12.0 terminal dashboard at 120 columns by 36 rows, showing two synthetic printers, aligned farm totals, rounded panels, selected printer details, notices, and recent events.](assets/screenshots/readme-tui-farm.png)
 
 Rounded panels group the farm; inspection and Config open centered over a dimmed dashboard while monitoring continues. Resize keeps the active dialog and your place.
 
-Press `m` for [AMS and filament details](assets/screenshots/tui-filament.png), including reported slot material, remaining estimates, nozzle assignment, and per-unit readings.
+| AMS / Filament (`m`) | Config (`,`) |
+| --- | --- |
+| [![AMS and filament inspector with slot materials, remaining estimates, nozzle assignments, and selected-slot details over a dimmed farm.](assets/screenshots/readme-tui-filament.png)](assets/screenshots/readme-tui-filament.png) | [![Centered Config dialog with General settings, a highlighted selection, section tabs, and its own footer over a dimmed farm.](assets/screenshots/readme-tui-config.png)](assets/screenshots/readme-tui-config.png) |
+
+Captured from the v0.12.0 release at 120 × 36 using synthetic demo data and the default theme. Open either image for the full-size view. See [AMS and filament](docs/user/usage.md#ams-and-filament) and [configuration](docs/user/usage.md#configuration) for details.
 
 ### Web browser dashboard
 
