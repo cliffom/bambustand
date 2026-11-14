@@ -49,7 +49,7 @@ func (m *Model) aboutKey(key string, msg tea.Msg) tea.Cmd {
 }
 
 func (m *Model) syncAbout() {
-	m.about.Width, m.about.Height = max(1, m.width-2), max(1, m.height-4)
+	m.about.Width, m.about.Height = max(1, m.dialogWidth()-2), max(1, m.dialogHeight()-4)
 	platform := runtime.GOOS
 	if platform == "darwin" {
 		platform = "macOS"

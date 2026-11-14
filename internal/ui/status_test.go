@@ -16,7 +16,7 @@ import (
 )
 
 func lastRow(m Model) string {
-	rows := strings.Split(ansi.Strip(m.View()), "\n")
+	rows := strings.Split(ansi.Strip(activeView(m)), "\n")
 	return rows[len(rows)-1]
 }
 
@@ -41,7 +41,7 @@ func TestHelpScrollsAndAdvertisesOnlyItsControls(t *testing.T) {
 		t.Fatal("resize lost help position")
 	}
 	m = key(m, "end")
-	if !strings.Contains(ansi.Strip(m.View()), "Quit from dashboard") {
+	if !strings.Contains(strings.Join(strings.Fields(ansi.Strip(activeView(m))), " "), "? or Esc closes help") {
 		t.Fatal("lower help content is inaccessible")
 	}
 	m = key(m, "esc")
@@ -94,7 +94,7 @@ func TestOverlappingErrorsKeepControlsAndCompleteDetails(t *testing.T) {
 		}
 		view := m.status
 		view.Height = 100
-		text := ansi.Strip(view.View())
+		text := strings.Join(strings.Fields(ansi.Strip(view.View())), " ")
 		for _, want := range []string{m.configStorageError, m.NoticeStorageError, m.AlertStorageError, m.exportError, m.browserError, "retry", "preserved"} {
 			if !strings.Contains(text, want) {
 				t.Fatal("full error/recovery unavailable", want)
@@ -127,7 +127,7 @@ func TestStatusSuspendsNestedAlertsAndContinuesTelemetry(t *testing.T) {
 	}
 	m = attentionReport(t, m, "H", `{"print":{"gcode_state":"RUNNING","hms":[],"print_error":0}}`)
 	m = resizeModel(m, 60, 18)
-	if m.attention.view.Width != 60 || m.alertDialog.view.Width != 58 {
+	if m.attention.view.Width != m.dialogWidth() || m.alertDialog.view.Width != m.dialogWidth()-2 {
 		t.Fatal("suspended owners were not resized")
 	}
 	for _, input := range []string{"q", "ctrl+c", "1", "y"} {

@@ -213,7 +213,7 @@ func (m *Model) syncFilament() {
 	p := m.Farm.Printers[d.printerID]
 	units := filamentUnits(p)
 	u, s := d.filamentSelection(units)
-	d.view.Width, d.view.Height = max(1, m.width-dialogInset), max(1, m.height-dialogInset)
+	d.view.Width, d.view.Height = max(1, m.dialogWidth()), max(1, m.dialogHeight()-6)
 	var lines []string
 	selectedRow := -1
 	d.detailsOffset = 0
@@ -320,14 +320,12 @@ func (m Model) filamentView() string {
 			break
 		}
 	}
-	footer := m.statusFooter("PgUp/PgDn scroll  m / Esc close", "m / Esc close", m.width-dialogInset)
 	navigation := "Tab/←/→ unit · ↑/↓ slot · Enter details"
 	if len(units) == 0 {
 		navigation = "Inventory unavailable; telemetry continues."
 	}
-	lines := []string{m.versionedTitle(m.styles.accent.Bold(true).Render("AMS / FILAMENT"), max(1, m.width-dialogInset)), m.styles.text.Render(unit), m.styles.secondary.Render(navigation), "", d.view.View(), "", footer}
-	box := m.styles.border.Width(max(1, m.width-dialogBorderInset)).Render(strings.Join(lines, "\n"))
-	return fit(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box), m.width, m.height)
+	lines := []string{m.styles.accent.Bold(true).Render("AMS / FILAMENT"), m.styles.text.Render(unit), m.styles.secondary.Render(navigation), "", d.view.View()}
+	return m.fullView(lines, "PgUp/PgDn scroll  m / Esc close")
 }
 
 // slotValue labels filament attributes while preserving empty and unknown states.

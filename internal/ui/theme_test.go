@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -258,6 +259,20 @@ func TestThemeCanvasCoversEverySurfaceAndResize(t *testing.T) {
 					allowed := map[string]bool{}
 					for _, bg := range []lipgloss.Color{p.Background, p.SelectedBackground, p.FooterBackground} {
 						allowed[expectedPaint(p.Text, bg, false).background] = true
+					}
+					if m.hasOpenDialog() && m.terminalFits() {
+						background := p.Background
+						if background == "" {
+							r, g, b := rgb(p.Text)
+							target := 0
+							if r+g+b < 384 {
+								target = 1<<24 - 1
+							}
+							background = lipgloss.Color(fmt.Sprintf("#%06X", target))
+						}
+						for _, bg := range []lipgloss.Color{p.SelectedBackground, p.FooterBackground} {
+							allowed[expectedPaint(p.Text, blend(bg, background), false).background] = true
+						}
 					}
 					for _, cell := range paintedCells(view) {
 						if !allowed[cell.background] || cell.foreground == "default" && profile != termenv.Ascii {

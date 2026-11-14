@@ -16,11 +16,11 @@ Both interfaces show reported AMS drying status, known message descriptions and 
 
 ## Current priority
 
-The compact browser dashboard overhaul (#183) is complete. The requested tab-label and circular-count refinement in [#185](https://github.com/cliffom/bambustand/issues/185) prepares v0.10.1. After this polish, resume the notification reliability milestone, led by sustained monitoring-loss alerts (#175), without dropping the usability and validation work below. Broader browser/device validation remains in #139; notice controls (#136), view persistence (#138) and remote access (#143) remain separately scoped.
+The user-selected next release is the [TUI UI/UX refresh, milestone 19](https://github.com/cliffom/bambustand/milestone/19), prepared as v0.12.0 in this branch. Complete its implementation and release review before resuming notification reliability, led by sustained monitoring-loss alerts (#175). Broader browser/device validation remains in #139; notice controls (#136), the TUI Idle / finished filter (#137), browser view persistence (#138) and remote access (#143) remain separately scoped.
 
 ## Open-issue milestones
 
-Open issue states and milestone assignments were checked on 2026-11-12 against the open GitHub issues and milestone assignments. This backlog is grouped by outcome, without committed delivery dates or release versions. The design milestones track decisions only; implementation requires an adopted design and separately scoped work.
+Open issue states and milestone assignments were checked on 2026-11-14 (UTC) against the open GitHub issues and milestone assignments. This backlog is grouped by outcome, without committed delivery dates or release versions. The design milestones track decisions only; implementation requires an adopted design and separately scoped work.
 
 | Milestone | Open issues | Completion criteria |
 | --- | --- | --- |
@@ -34,11 +34,9 @@ Live validation in #23 and #38 remains deferred behind usability work, as record
 
 ## TUI UI/UX refresh
 
-[Milestone 19](https://github.com/cliffom/bambustand/milestone/19) captures the reviewed visual direction for future implementation; its six open issue assignments were checked on 2026-11-14 (UTC). It does not change the existing notification-reliability priority or commit a release version/date. The [design review](development/design/tui-refresh-review/index.html) retains seven screen concepts, user feedback, compact studies, and the approved stronger-dimming variant.
+[Milestone 19](https://github.com/cliffom/bambustand/milestone/19) is implemented in the v0.12.0 candidate and awaits PR/CI and release review. Its six issues remain open until the implementation PR merges: [#190 shared frames](https://github.com/cliffom/bambustand/issues/190), [#191 dashboard](https://github.com/cliffom/bambustand/issues/191), [#192 Config](https://github.com/cliffom/bambustand/issues/192), [#193 Action needed / Filament](https://github.com/cliffom/bambustand/issues/193), [#194 status/activity and remaining dialogs](https://github.com/cliffom/bambustand/issues/194), and [#195 protocol assessment](https://github.com/cliffom/bambustand/issues/195). The last records [deferral of experimental cell-edge rendering](development/cell-border-assessment.md), independently from the conventional implementation.
 
-Begin with [#190](https://github.com/cliffom/bambustand/issues/190): shared rounded frames and opaque modals centered on both axes over a substantially dimmed dashboard, preserving input/selection/scroll on resize. Continue with [#191 dashboard](https://github.com/cliffom/bambustand/issues/191), [#192 Config](https://github.com/cliffom/bambustand/issues/192), [#193 Action needed / Filament](https://github.com/cliffom/bambustand/issues/193), and [#194 status/activity and remaining dialogs](https://github.com/cliffom/bambustand/issues/194). [#195](https://github.com/cliffom/bambustand/issues/195) separately assesses experimental cell-edge borders; adoption is optional and conventional terminals remain usable.
-
-Completion requires consistent modal/focus/return behavior, theme-aware dimming with full-contrast active content, preserved read-only telemetry and notice/delivery semantics, applicable interaction/layout checks, and current help/guidance/actual captures. Prioritize normal working sizes; retain the existing 60 × 18 minimum and below-minimum warning unless explicitly revised. Generated mockup positions are approximate; implementation must calculate centering against the full viewport.
+The [design review](development/design/tui-refresh-review/index.html) retains approved generated references. Current implementation and capture evidence belongs in the [validation record](development/validation.md); generated concepts are not application or hardware evidence. Keep the 60 × 18 minimum and read-only/telemetry/local-decision contracts. Release preparation does not constitute publication or live validation.
 
 ## Scope and validation
 

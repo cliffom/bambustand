@@ -1,6 +1,8 @@
 # Action-needed alerts
 
-The automatic dialog surfaces operator-attention conditions while preserving the existing read-only monitor and per-notice decisions.
+The centered automatic dialog surfaces operator-attention conditions while preserving the existing read-only monitor and per-notice decisions.
+
+The farm stays visible and dimmed behind the opaque dialog. Reported outcomes and next steps lead; independent notice codes, reviews and first-observed times remain available by scrolling. Local-action controls stay in the dialog footer. Resizing preserves the current printer and reading position.
 
 ## Trigger rules
 

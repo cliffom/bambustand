@@ -8,9 +8,11 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/cliffom/bambustand/internal/farm"
 	"github.com/cliffom/bambustand/internal/monitor"
+	"github.com/muesli/termenv"
 )
 
 func demoModel() Model {
@@ -49,32 +51,43 @@ func TestNavigationAndHelp(t *testing.T) {
 }
 
 func TestDashboardSectionHeadersFollowPanelFocus(t *testing.T) {
-	for _, size := range [][2]int{{60, 18}, {104, 32}, {105, 32}, {120, 32}} {
-		t.Run(fmt.Sprintf("%dx%d", size[0], size[1]), func(t *testing.T) {
-			m := demoModel()
-			for _, focused := range []string{"PRINTERS", "PRINTER DETAILS", "NOTICES", "PRINTERS"} {
-				// Headers retain their focus indication after resizing and reports.
-				next, _ := m.Update(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
-				m = attentionReport(t, next.(Model), "H", `{"print":{"gcode_state":"RUNNING","mc_percent":42}}`)
-				view := ansi.Strip(m.View())
-				for _, title := range []string{"PRINTERS", "PRINTER DETAILS", "NOTICES"} {
-					marker := "  "
-					if title == focused {
-						marker = "› "
+	previous := lipgloss.ColorProfile()
+	t.Cleanup(func() { lipgloss.SetColorProfile(previous) })
+	for _, profile := range []termenv.Profile{termenv.TrueColor, termenv.ANSI256, termenv.Ascii} {
+		lipgloss.SetColorProfile(profile)
+		for _, size := range [][2]int{{60, 18}, {104, 32}, {105, 32}, {120, 32}} {
+			t.Run(fmt.Sprintf("%v-%dx%d", profile, size[0], size[1]), func(t *testing.T) {
+				m := demoModel()
+				for _, input := range []string{"tab", "tab", "shift+tab", "tab", "tab"} {
+					next, _ := m.Update(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
+					m = attentionReport(t, next.(Model), "H", `{"print":{"gcode_state":"RUNNING","mc_percent":42}}`)
+					raw := m.View()
+					view := ansi.Strip(raw)
+					titles := []string{"PRINTERS", "PRINTER DETAILS", "NOTICES"}
+					for i, title := range titles {
+						marked := title + " *"
+						expected := title
+						focused := m.focus == dashboardPanel(i)
+						if profile == termenv.Ascii && focused {
+							expected = marked
+						}
+						if !strings.Contains(view, "─ "+expected+" ─") || strings.Contains(view, "› "+title) {
+							t.Fatalf("missing title/focus or retained chevron for %s: %s", expected, view)
+						}
+						if strings.Contains(view, marked) != (profile == termenv.Ascii && focused) {
+							t.Fatalf("incorrect focus marker for %s", title)
+						}
 					}
-					if !strings.Contains(view, marker+title+" ─") {
-						t.Fatalf("missing section header %q with focus on %s:\n%s", title, focused, view)
+					if profile == termenv.Ascii && strings.Contains(raw, "\x1b") {
+						t.Fatal("no-color emitted ANSI")
 					}
-					if strings.Contains(view, "› "+title+" ─") != (title == focused) {
-						t.Fatalf("incorrect focus marker for %s:\n%s", title, view)
+					if m.current().ID != "H" {
+						t.Fatal("printer selection changed")
 					}
+					m = key(m, input)
 				}
-				if m.current().ID != "H" {
-					t.Fatal("printer selection changed")
-				}
-				m = key(m, "tab")
-			}
-		})
+			})
+		}
 	}
 }
 

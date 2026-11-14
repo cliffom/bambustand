@@ -181,9 +181,9 @@ func (m *Model) configKey(key string, msg tea.Msg) tea.Cmd {
 	case keyEnd:
 		m.configSelection = m.configRowCount() - 1
 	case keyPageUp:
-		m.configSelection = max(0, m.configSelection-max(1, m.height-configReservedRows))
+		m.configSelection = max(0, m.configSelection-max(1, m.dialogHeight()-configReservedRows))
 	case keyPageDown:
-		m.configSelection = min(m.configRowCount()-1, m.configSelection+max(1, m.height-configReservedRows))
+		m.configSelection = min(m.configRowCount()-1, m.configSelection+max(1, m.dialogHeight()-configReservedRows))
 	case keyEnter, " ", keyLeft, keyRight, keyVimLeft, keyVimRight:
 		if m.configSection == configAlerts && m.configSelection == notificationTestAction {
 			if key == keyEnter || key == " " {
@@ -487,7 +487,7 @@ func (m Model) configView() string {
 		}
 		lines = append(lines, "Localhost only · local notice decisions · stops on exit.", "")
 	}
-	visible := max(1, m.height-configReservedRows)
+	visible := max(1, m.dialogHeight()-configReservedRows)
 	if m.configSection == configWebServer {
 		visible = max(1, visible-4)
 	}
@@ -497,13 +497,13 @@ func (m Model) configView() string {
 		if i == m.configSelection {
 			marker = "> "
 		}
-		row := ansi.Truncate(marker+rows[i], max(1, m.width-2), "…")
+		row := ansi.Truncate(marker+rows[i], max(1, m.dialogWidth()-2), "…")
 		if i == m.configSelection {
-			row = paintSurface(m.styles.selection.Render(row), m.styles.palette.SelectedText, m.styles.palette.SelectedBackground)
+			row = paintSurface(m.styles.selection.Render(m.panelContent(row, m.dialogWidth())), m.styles.palette.SelectedText, m.styles.palette.SelectedBackground)
 		}
 		lines = append(lines, row)
 	}
-	for len(lines) < m.height-configTrailingRows {
+	for len(lines) < m.dialogHeight()-configTrailingRows {
 		lines = append(lines, "")
 	}
 	status := ""
@@ -519,13 +519,13 @@ func (m Model) configView() string {
 		}
 		status = m.styles.err.Render(message)
 	} else if len(m.statusProblems()) > 0 {
-		status = m.styles.err.Render(m.problemSummary(max(1, m.width-15)) + " · ^E status")
+		status = m.styles.err.Render(m.problemSummary(max(1, m.dialogWidth()-15)) + " · ^E status")
 	} else if m.configRegion != m.activeRegion {
 		status = m.styles.warning.Render("Region pending: restart and log in; current session unchanged.")
 	} else if m.configSection == configPrinters {
 		status = m.styles.secondary.Render("←/→ change · Inherit uses global defaults · scroll ↑/↓")
 	}
-	lines = append(lines, ansi.Truncate(status, max(1, m.width-2), "…"), ansi.Truncate("Config file location: "+safe(m.configPath), max(1, m.width-2), "…"), m.styles.secondary.Render("Saving normalizes TOML and removes comments."))
+	lines = append(lines, ansi.Truncate(status, max(1, m.dialogWidth()-2), "…"), ansi.Truncate("Config file location: "+safe(m.configPath), max(1, m.dialogWidth()-2), "…"), m.styles.secondary.Render("Saving normalizes TOML and removes comments."))
 	return m.frame(lines, m.configFooter())
 }
 
@@ -584,6 +584,6 @@ func (m Model) configFooter() string {
 	}
 	rendered := m.styles.feedback(m.notificationTestFeedbackKind()).Render(feedback)
 	separator := m.styles.footerSeparator.Render(" · ")
-	helperWidth := max(1, m.width-2-ansi.StringWidth(rendered)-ansi.StringWidth(separator))
+	helperWidth := max(1, m.dialogWidth()-2-ansi.StringWidth(rendered)-ansi.StringWidth(separator))
 	return ansi.Truncate(helper, helperWidth, "…") + separator + rendered
 }

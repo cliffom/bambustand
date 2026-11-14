@@ -22,6 +22,32 @@ func serverStatusText(m Model) string {
 	return ansi.Strip(view.View())
 }
 
+func TestServerStatusBackdropExcludesBackendDiagnostics(t *testing.T) {
+	previous := lipgloss.ColorProfile()
+	t.Cleanup(func() { lipgloss.SetColorProfile(previous) })
+	const private = "PRIVATE_BACKEND"
+	for _, profile := range []termenv.Profile{termenv.TrueColor, termenv.ANSI256, termenv.Ascii} {
+		lipgloss.SetColorProfile(profile)
+		for _, size := range [][2]int{{60, 18}, {120, 32}, {120, 60}, {200, 80}} {
+			m := key(resizeModel(demoModel(), size[0], size[1]), "W")
+			next, _ := m.Update(monitor.Event{Kind: monitor.EventConnection, Connected: false, Problem: private, At: m.now})
+			m = next.(Model)
+			for range 2 {
+				if strings.Contains(ansi.Strip(m.View()), private) {
+					t.Fatalf("backend diagnostic leaked at %v, profile %v", size, profile)
+				}
+			}
+			if !strings.Contains(strings.ToLower(serverStatusText(m)), "reconnecting") {
+				t.Fatal("fixed monitor state missing")
+			}
+			m = key(m, "esc")
+			if m.Farm.CloudProblem != private || (size[1] >= 60 && !strings.Contains(ansi.Strip(m.View()), private)) {
+				t.Fatal("inspection modified dashboard diagnostics")
+			}
+		}
+	}
+}
+
 func TestServerStatusRoutesRestoreConfigAndDashboard(t *testing.T) {
 	m := resizeModel(demoModel(), 60, 18)
 	m = key(key(m, "j"), "tab")

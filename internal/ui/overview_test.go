@@ -31,6 +31,64 @@ func overviewModel(t *testing.T) Model {
 	return m
 }
 
+func TestOverviewRowsAlignWithoutChangingTitle(t *testing.T) {
+	for _, size := range [][2]int{{60, 18}, {80, 24}, {120, 32}, {150, 44}} {
+		m := resizeModel(overviewModel(t), size[0], size[1])
+		title := m.dashboardHeader()
+		var previous [2]int
+		for _, count := range []int{0, 9, 10, 99, 100, 999} {
+			m.overview.printing, m.overview.stopped, m.overview.idle = count, count, count
+			m.overview.attention, m.overview.unavailable = count, count
+			rows := m.overviewLines()
+			var separators [2]int
+			for i, row := range rows {
+				plain := ansi.Strip(row)
+				if ansi.StringWidth(row) > m.width {
+					t.Fatal("summary overflow", size, count, plain)
+				}
+				first := strings.Index(plain, " · ")
+				second := first + len(" · ") + strings.Index(plain[first+len(" · "):], " · ")
+				positions := [2]int{ansi.StringWidth(plain[:first]), ansi.StringWidth(plain[:second])}
+				if i == 0 {
+					separators = positions
+				} else if positions != separators {
+					t.Fatal("summary columns differ", size, count, rows)
+				}
+			}
+			if count < 100 && previous != [2]int{} && separators != previous {
+				t.Fatal("two-digit counts moved columns", size, count)
+			}
+			previous = separators
+			if m.dashboardHeader() != title {
+				t.Fatal("first header row changed", size, count)
+			}
+			if !strings.Contains(ansi.Strip(rows[1]), fmt.Sprintf("%d ", count)) || !strings.Contains(ansi.Strip(rows[1]), "notices (") {
+				t.Fatal("summary values omitted", size, count)
+			}
+		}
+	}
+}
+
+func TestOverviewPolicyAlignsWithFourthColumn(t *testing.T) {
+	m := resizeModel(demoModel(), 120, 32)
+	m.SetSnooze("H", time.Hour, m.now)
+	rows := m.overviewLines()
+	top, bottom := ansi.Strip(rows[0]), ansi.Strip(rows[1])
+	topStart := strings.LastIndex(top, " · ")
+	bottomStart := strings.Index(bottom, " · 1 snoozed")
+	if topStart < 0 || bottomStart < 0 || ansi.StringWidth(top[:topStart]) != ansi.StringWidth(bottom[:bottomStart]) {
+		t.Fatal("optional policy moved fourth column", rows)
+	}
+	for _, width := range []int{60, 80, 120} {
+		m = resizeModel(m, width, 32)
+		for _, row := range m.overviewLines() {
+			if ansi.StringWidth(row) > width {
+				t.Fatal("policy overflow", width)
+			}
+		}
+	}
+}
+
 func TestIdleFreshnessMatchesUnavailableFilterAndNotices(t *testing.T) {
 	for _, state := range []string{"IDLE", "FINISH"} {
 		t.Run(state, func(t *testing.T) {

@@ -73,9 +73,9 @@ region = "global" # or "china"
 low_filament_percent = 10
 ```
 
-![Config screen showing the canonical application directory in a synthetic macOS home](../../assets/screenshots/config-storage.png)
+![Centered Config over a dimmed synthetic farm, with General settings, the selected row and configuration path](../../assets/screenshots/config-storage.png)
 
-Config at 120 × 32 with a synthetic home directory; `--config-path` prints your full default path. Narrow terminals truncate the displayed path.
+Config at 150 × 44 using an explicit temporary demo configuration; `--config-path` prints your full default path. Dialogs stay centered on opening and resize, over a dimmed farm (Server Status uses a neutral backdrop). Their footer stays inside the frame; telemetry and saves continue, and your input, selection and scroll are preserved. Narrow terminals truncate the displayed path.
 
 The configuration contains no credentials. Each region uses a separate saved session. All printers discovered on the account appear in the dashboard.
 
@@ -181,11 +181,15 @@ On screens up to 760 CSS pixels wide, cards start collapsed to the name, model, 
 
 Press **`W`** from the dashboard, or select **Server Status** in **Config (,) > Web Server** and press `Enter` or Space. `W` also opens it from that Config section when no edit or confirmation owns input. This read-only modal stays live while monitoring, HTTP clients, listener commands, and saves continue. Enablement, port changes, and retry remain in Config.
 
-The modal shows cloud/demo mode; Stopped (disabled), Starting, Running, Stopping, or Failed HTTP state; monitoring connection/reconnect/authentication state; and the complete bound localhost URL only after a successful bind. **Session uptime** measures this TUI session; **Listener uptime** measures the current successful binding and resets after a listener restart. Connected monitoring does not establish fresh printer telemetry. Persistent Config, notice, and snooze storage warnings include recovery guidance. Recent diagnostics retain up to eight fixed, sanitized messages; they exclude raw backend errors and telemetry.
+The modal shows cloud/demo mode; Stopped (disabled), Starting, Running, Stopping, or Failed HTTP state; monitoring connection/reconnect/authentication state; and the complete bound localhost URL only after a successful bind. **Session uptime** measures this TUI session; **Listener uptime** measures the current successful binding and resets after a listener restart. Connected monitoring does not establish fresh printer telemetry. Persistent Config, notice, and snooze storage warnings include recovery guidance. Recent diagnostics retain up to eight fixed, sanitized messages; they exclude raw backend errors and telemetry. A neutral backdrop hides dashboard diagnostics while this inspector is open.
 
 HTTP activity uses the same session-only ledger as the foreground view: up to 32 connect/disconnect events and 128 tracked sockets/groups, grouped best-effort by socket IP and sanitized first-request User-Agent. Sockets without requests are ignored. The last socket's closure starts a five-second disconnect grace; matching replacement sockets keep the group alive. Server shutdown retires groups immediately. Active counts cover tracked groups, and tracking omissions and expired history are labeled. A group is neither an authenticated user nor an exact browser-tab count. Client metadata never enters browser snapshots or persistent storage.
 
 Use arrows, `j`/`k`, page keys, or Home/End (`g`/`G`) to scroll; long client metadata wraps. Updates preserve the scroll offset where content permits. `Esc` or `W` returns to the dashboard or Config, preserving its selection and input. `Ctrl+E` opens Status / Feedback and returns to this modal, preserving the suspended Config as well. Closing inspection leaves the server running. Quit remains dashboard-only; below 60 × 18, navigation is blocked and resizing back restores inspection.
+
+![Server Status at 60 × 18 with a neutral backdrop and fixed close controls](../../assets/screenshots/tui-server-status.png)
+
+Synthetic demo at 60 × 18; the server is disabled and monitoring is connected. Scroll to inspect diagnostics and HTTP activity below the visible area.
 
 ### Foreground server status
 

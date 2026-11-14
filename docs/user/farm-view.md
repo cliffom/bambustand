@@ -10,6 +10,10 @@ The printer table's `JOB` column and printer details' `Job Name` use the reporte
 
 Printer details also show a **Print outcome** for paused/stopped, canceled and explicitly finished jobs, using the same interpretation as action-needed alerts and browser inspection. Cancellation keeps raw `FAILED` visible; last-known outcomes cannot establish the current state. All independent faults remain available in Notices. See [reading an alert](action-needed.md#reading-an-alert).
 
+Rounded panels group printers, details and notices. The focused panel has an accent outline (or a `*` after its title without color); the selected printer retains its row highlight. Details and notices share a divider at 105 columns and above and stack below it. Inspection dialogs open centered over the dimmed farm and retain your place through resize.
+
+The two summary rows beneath the app/version/connection heading use aligned columns. Counts describe the same whole farm; compact terminals shorten labels and show snoozed/muted totals only when there is room.
+
 ## Summary definitions
 
 | Count | Meaning |
@@ -63,7 +67,11 @@ A comparable finish estimate requires a running printer, remaining-time data, li
 
 ## Selection and navigation
 
-The dashboard sections are labeled **Printers**, **Printer Details**, and **Notices**, without numeric prefixes. A `›` marker identifies the focused panel, including when color is unavailable. Use `Tab` / `Shift+Tab` to move focus between panels.
+The dashboard sections are labeled **Printers**, **Printer Details**, and **Notices**, without numeric prefixes. An accent outline identifies the focused panel. When color is unavailable, a `*` after its title identifies focus. Use `Tab` / `Shift+Tab` to move focus between panels.
+
+![No-color synthetic farm at 60 × 18, with an asterisk after Printer Details marking keyboard focus](../../assets/screenshots/tui-focus-no-color.png)
+
+The selected printer row stays marked while keyboard focus moves to Details or Notices.
 
 Updates may reorder rows, but selection stays attached to the same printer ID while it still matches the filter. Printer details retain their scroll position when that identity stays selected, subject to normal viewport limits after resizing. Renaming a printer does not change its identity.
 

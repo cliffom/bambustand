@@ -172,7 +172,7 @@ func (m *Model) syncDecisions() {
 	if d == nil {
 		return
 	}
-	d.view.Width, d.view.Height = max(1, m.width-2), max(1, m.height-6)
+	d.view.Width, d.view.Height = max(1, m.dialogWidth()-2), max(1, m.dialogHeight()-6)
 	items := m.decisionItems()
 	item, ok := d.selectItem(items)
 	var lines []string
@@ -217,7 +217,7 @@ func (m Model) decisionsView() string {
 			"Includes saved decisions awaiting telemetry.", "Active notices become visible and unreviewed.", "Session alert suppression resets; actionable notices can prompt again.", "Printer state and event history remain unchanged.", "",
 			"y: reset decisions     n / Esc: cancel",
 		}
-		return m.fullView([]string{wrapLines(lines, m.width)}, "y reset  n / Esc cancel")
+		return m.fullView([]string{wrapLines(lines, m.dialogWidth())}, "y reset  n / Esc cancel")
 	}
 	mode := "Account and region · local decisions"
 	if m.Demo {

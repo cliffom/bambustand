@@ -127,7 +127,7 @@ func (m *Model) syncAlertDialog() {
 	if d == nil {
 		return
 	}
-	d.view.Width, d.view.Height = max(1, m.width-2), max(1, m.height-6)
+	d.view.Width, d.view.Height = max(1, m.dialogWidth()-2), max(1, m.dialogHeight()-6)
 	p := m.Farm.Printers[d.printerID]
 	if p == nil {
 		d.view.SetContent("Printer no longer in this account.\nPress Esc to close.")

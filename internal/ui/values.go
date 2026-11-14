@@ -20,7 +20,11 @@ const (
 	minutesPerHour        = 60
 	aboutPaletteCellWidth = 8
 	aboutSwatchWidth      = 6
-	dialogInset           = 8
+	maximumModalWidth     = 100
+	maximumModalHeight    = 26
+	modalHorizontalInset  = 4
+	modalVerticalInset    = 3
+	inactiveColorPercent  = 38
 	dialogBorderInset     = 4
 	colorRGBDigits        = 6
 	colorRGBADigits       = 8
@@ -38,10 +42,8 @@ const (
 	snoozeLong               = 4 * time.Hour
 	defaultWidth             = 100
 	defaultHeight            = 32
-	panelGap                 = 3
 	detailsWidthPercent      = 57
 	dashboardReservedRows    = 11
-	minimumPanelRows         = 4
 	maximumPrinterRows       = 6
 	printerRowsHeightDivisor = 5
 	estimatedNoticeRows      = 3

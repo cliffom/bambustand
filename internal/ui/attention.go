@@ -263,19 +263,19 @@ func (m *Model) syncAttentionView() {
 		lines = append(lines, "", m.styles.secondary.Render("Alerts: "+m.alertStatus(p.ID)))
 	}
 	lines = append(lines, "", "Local actions: acknowledge marks reviewed; hide removes notices locally.", "Snooze delays this printer's alerts; Esc closes all queued prompts for this session.", "Local review does not resolve a fault. Use the printer or Bambu app for physical intervention and printer controls.", "First observed is app observation time, not printer fault start or desktop delivery time.")
-	d.view.Width, d.view.Height = max(1, m.width), max(1, m.height-4)
+	d.view.Width, d.view.Height = max(1, m.dialogWidth()), max(1, m.dialogHeight()-4)
 	offset := d.view.YOffset
 	d.view.SetContent(ansi.Wrap(strings.Join(lines, "\n"), d.view.Width, ""))
 	d.view.SetYOffset(offset)
 }
 
-// attentionView uses the shared full-screen notice layout and single-row footer.
+// attentionView uses the shared modal notice layout and single-row footer.
 func (m Model) attentionView() string {
 	d := m.attention
 	hints := "a acknowledge  c hide  s snooze  Esc close"
-	if m.width >= 100 {
+	if m.dialogWidth() >= 100 {
 		hints = "Enter notice  p printer  o link  " + hints
 	}
-	lines := []string{m.styles.err.Bold(true).Render("ACTION NEEDED"), m.styles.accent.Bold(true).Render(ansi.Truncate(fmt.Sprintf("Printer %d / %d · %s", d.index+1, len(d.groups), safe(d.groups[d.index].name)), max(1, m.width), "…")), m.styles.secondary.Render("Tab printer · ↑/↓ scroll · Enter notice · p printer · o link"), d.view.View()}
+	lines := []string{m.styles.err.Bold(true).Render("ACTION NEEDED"), m.styles.accent.Bold(true).Render(ansi.Truncate(fmt.Sprintf("Printer %d / %d · %s", d.index+1, len(d.groups), safe(d.groups[d.index].name)), max(1, m.dialogWidth()), "…")), m.styles.secondary.Render("Tab printer · ↑/↓ scroll · Enter notice · p printer · o link"), d.view.View()}
 	return m.fullView(lines, hints)
 }

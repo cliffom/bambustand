@@ -10,8 +10,8 @@ import (
 	"github.com/cliffom/bambustand/internal/notifications"
 )
 
-// Five header rows, one spacer, four detail rows, and the footer.
-const activityReservedRows = 11
+// Five header rows, one spacer, five detail rows, and the footer.
+const activityReservedRows = 12
 
 type notificationActivityDialog struct {
 	entries  []notifications.Activity
@@ -56,7 +56,7 @@ func (m *Model) syncNotificationActivity() {
 
 func (m *Model) notificationActivityKey(key string, _ tea.Msg) tea.Cmd {
 	d := m.notificationActivity
-	page := max(1, m.height-activityReservedRows)
+	page := max(1, m.dialogHeight()-activityReservedRows)
 	switch key {
 	case keyEscape, keyNotificationActivity:
 		m.closeDialog()
@@ -106,9 +106,31 @@ func (m Model) activityOutcome(entry notifications.Activity) string {
 	}
 }
 
+func (m Model) activityRow(entry notifications.Activity, width int, selected bool) string {
+	printerWidth, subjectWidth, outcomeWidth := activityColumnWidths(width)
+	marker := "  "
+	if selected {
+		marker = "> "
+	}
+	// Pad after ANSI-aware truncation: byte/rune lengths cannot align wide
+	// printer names. Selected rows own every field's foreground/background.
+	outcome := cell(entry.Outcome, outcomeWidth)
+	if !selected {
+		entry.Outcome = safe(entry.Outcome)
+		outcome = m.panelContent(m.activityOutcome(entry), outcomeWidth)
+	}
+	row := marker + entry.At.Local().Format("15:04:05") + " " +
+		cell(entry.Printer, printerWidth) + " · " + cell(entry.Subject, subjectWidth) + " · " + outcome
+	row = ansi.Truncate(row, max(0, width), "")
+	if selected {
+		return paintSurface(m.styles.selection.Render(row), m.styles.palette.SelectedText, m.styles.palette.SelectedBackground)
+	}
+	return row
+}
+
 func (m Model) notificationActivityView() string {
 	d := m.notificationActivity
-	width := max(1, m.width-2)
+	width := max(1, m.dialogWidth()-2)
 	hints := "↑/↓ select  PgUp/PgDn page  N/Esc close"
 	if m.notificationRecoveryAvailable() {
 		hints = "↑/↓ select  PgUp/PgDn  r recheck  N/Esc close"
@@ -141,7 +163,7 @@ func (m Model) notificationActivityView() string {
 		ownership = "Desktop delivery unavailable in this session"
 	}
 	lines := []string{m.styles.accent.Bold(true).Render("NOTIFICATION ACTIVITY"), hint, history, summary, ownerStyle.Render(ansi.Truncate(ownership, width, "…"))}
-	visible := max(1, m.height-activityReservedRows)
+	visible := max(1, m.dialogHeight()-activityReservedRows)
 	if len(d.entries) == 0 {
 		lines = append(lines, "No live notification decisions yet.")
 		explanation := "Waiting for evaluated incidents or print completions."
@@ -163,29 +185,10 @@ func (m Model) notificationActivityView() string {
 	} else {
 		start := max(0, d.index-visible+1)
 		for i := start; i < min(len(d.entries), start+visible); i++ {
-			entry := d.entries[i]
-			marker := "  "
-			if i == d.index {
-				marker = "> "
-			}
-			// Reserve the outcome column so long/untrusted printer names cannot hide it.
-			subject := ansi.Truncate(safe(entry.Subject), max(12, width/3), "…")
-			// The selected row owns its foreground. A nested outcome color may
-			// match the selection background in a user or bundled theme.
-			outcome := safe(entry.Outcome)
-			if i != d.index {
-				outcome = m.activityOutcome(entry)
-			}
-			suffix := " · " + subject + " · " + outcome
-			prefix := marker + entry.At.Local().Format("15:04:05") + " " + safe(entry.Printer)
-			row := ansi.Truncate(prefix, max(1, width-ansi.StringWidth(suffix)), "…") + suffix
-			if i == d.index {
-				row = paintSurface(m.styles.selection.Render(row), m.styles.palette.SelectedText, m.styles.palette.SelectedBackground)
-			}
-			lines = append(lines, row)
+			lines = append(lines, m.activityRow(d.entries[i], width, i == d.index))
 		}
 	}
-	for len(lines) < m.height-6 {
+	for len(lines) < m.dialogHeight()-7 {
 		lines = append(lines, "")
 	}
 	lines = append(lines, "")
@@ -198,7 +201,7 @@ func (m Model) notificationActivityView() string {
 		detail += " · " + safe(entry.Subject)
 		lines = append(lines, ansi.Truncate(detail, width, "…"))
 		reason := strings.Split(ansi.Wrap(notifications.ReasonText(entry.Reason), width, ""), "\n")
-		for i := range 2 {
+		for i := range 3 {
 			if i < len(reason) {
 				lines = append(lines, reason[i])
 			} else {

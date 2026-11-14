@@ -70,7 +70,7 @@ func TestOfflineRowsRemainDistinctAcrossLayoutsAndSelection(t *testing.T) {
 								if selected {
 									found := false
 									for _, line := range strings.Split(m.View(), "\n") {
-										if strings.Contains(ansi.Strip(line), "Device") && strings.HasPrefix(ansi.Strip(line), "› ") {
+										if strings.Contains(ansi.Strip(line), "Device") && strings.HasPrefix(ansi.Strip(line), "│› ") {
 											found = true
 											assertPaint(t, line, "Device", fg, bg, false)
 											assertPaint(t, line, "Offline", fg, bg, false)

@@ -2,6 +2,16 @@
 
 Release changes and upgrade notes are recorded below. Names and scope describe each historical release; see [usage](user/usage.md) for current behavior and the [validation record](development/validation.md) for checked revisions, evidence and outstanding limitations.
 
+## 0.12.0 — Terminal UI refresh
+
+- Server Status hides dashboard diagnostics behind a neutral backdrop; shutdown warnings wrap to the active frame, preserving their text on compact terminals.
+- Notification activity aligns time, printer, subject and outcome columns, including long names and compact terminals. The two farm-summary rows also use aligned columns beneath the unchanged title row.
+
+- No-color mode marks the focused panel title with `*`, keeping keyboard navigation visible without chevrons.
+- Rounded dashboard panels, shared Details/Notices boundaries, explicit focus outlines and dotted detail grouping make the farm easier to scan.
+- Config, Action needed, AMS / Filament, Status / Feedback, notification activity and the remaining inspectors use centered opaque frames over a substantially dimmed dashboard. Frames recenter on resize while preserving the active dialog, input, selection and reading position; controls remain in the active frame.
+- Conventional terminal rendering retains themes, no-color labels, the 60 × 18 minimum, immediate configuration saves and existing keys. Read-only monitoring, telemetry interpretation, local notice decisions and notification policy are unchanged. No configuration migration is required. Experimental cell-edge rendering is deferred after an isolated Go-stack assessment.
+
 ## 0.11.0 — Expandable mobile printer cards
 
 - Mobile browser cards start with printer identity, image, and textual status; an accessible footer chevron expands or collapses inline telemetry and Details.
