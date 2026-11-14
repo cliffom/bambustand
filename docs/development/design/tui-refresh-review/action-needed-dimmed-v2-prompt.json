@@ -1,0 +1,8 @@
+{
+  "tool": "Built-in image_gen",
+  "reference": "action-needed.png",
+  "output": "action-needed-dimmed-v2.png",
+  "prompt_direction": "Dim all dashboard content to approximately 35\u201340% foreground brightness against near-black, no blur. Preserve full-brightness opaque modal, typography, controls and rounded frame. Move modal toward exact full-viewport center. Retain original as comparison. Align illustrative observation age/clock and paused printer state. Follow-up requested translation upward by 28px without scaling.",
+  "limits": "Generated translation is approximate; exact centering is an implementation requirement. Dimming is a visual target, not measured luminance.",
+  "status": "Stronger-dimming direction approved by user; exact modal centering remains an implementation requirement"
+}

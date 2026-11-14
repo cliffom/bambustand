@@ -1,0 +1,23 @@
+{
+  "study": "TUI refresh / Design study 01",
+  "exported": "2026-11-14T04:15:20.448Z",
+  "feedback": {
+    "overall": "",
+    "dashboard-decision": "Keep direction",
+    "dashboard-notes": "",
+    "settings-decision": "Keep direction",
+    "settings-notes": "",
+    "action-needed-decision": "Keep direction",
+    "action-needed-notes": "",
+    "filament-decision": "Keep direction",
+    "filament-notes": "",
+    "alerts-decision": "Keep direction",
+    "alerts-notes": "",
+    "status-decision": "Keep direction",
+    "status-notes": "",
+    "activity-decision": "Keep direction",
+    "activity-notes": "",
+    "compact-notes": "These are extreme sizes and probably an edge case. As these are less useful because of design constraints I am not overly concerned. We should probably define a min size that the UI supports before it gives a warning",
+    "milestone-notes": "Great direction. Modals should maintain being centered, horizontally and vertically, when opened"
+  }
+}

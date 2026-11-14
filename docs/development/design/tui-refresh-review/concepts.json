@@ -1,0 +1,82 @@
+{
+  "status": "All seven visual directions and stronger-dimming variant approved for milestone planning; not implemented",
+  "date": "2026-11-13",
+  "tool": "Built-in image_gen",
+  "reference": "Current farm.png/config-storage.png; approved dashboard and Settings concepts from this conversation",
+  "prompt_direction": "Restrained BambuStand TUI iteration; near-black surface, pale green thin cell-edge lines with small rounded corners, muted shared dividers and T-junctions, dark-green selected rows, slate footer, monospaced typography, bounded modals over dimmed dashboard. Preserve read-only semantics and existing keyboard controls. No printer controls, web cards, glow, or decorative illustrations.",
+  "screens": [
+    {
+      "id": "dashboard",
+      "title": "Dashboard",
+      "file": "dashboard.png",
+      "intent": "Shared panel boundaries, rounded corners, and a quiet hierarchy.",
+      "review_question": "Are the panel outlines helpful? Are the dotted detail separators too busy?"
+    },
+    {
+      "id": "settings",
+      "title": "Settings / General",
+      "file": "settings.png",
+      "intent": "Bounded Config over the farm, with tabs and its own active footer.",
+      "review_question": "Is the modal size comfortable? Should sparse sections use a shorter panel?"
+    },
+    {
+      "id": "action-needed",
+      "title": "Action needed",
+      "file": "action-needed.png",
+      "intent": "Reported outcome and next step lead; independent notices retain their metadata.",
+      "review_question": "Is the next step clear? Is the distinction between local review and physical intervention visible enough?"
+    },
+    {
+      "id": "filament",
+      "title": "AMS / Filament",
+      "file": "filament.png",
+      "intent": "Unit navigation, reported drying, slot table, and selected-slot details.",
+      "review_question": "Does the information grouping work? Is the table preferable to a more graphical spool view?"
+    },
+    {
+      "id": "alerts",
+      "title": "Settings / Alerts",
+      "file": "alerts.png",
+      "intent": "Existing preferences, immediate saves, and explicit notification-test acceptance.",
+      "review_question": "Are the groups and On/Off values easy to scan? Is test feedback sufficiently clear?"
+    },
+    {
+      "id": "status",
+      "title": "Status / Feedback",
+      "file": "status.png",
+      "intent": "Independent save states, complete failure guidance, and a fixed return/retry footer.",
+      "review_question": "Are errors easy to distinguish from printer faults? Can you tell which failures retry saves affects?"
+    },
+    {
+      "id": "activity",
+      "title": "Notification activity",
+      "file": "activity.png",
+      "intent": "Ownership and capacity above a stable decision list with selected-entry details.",
+      "review_question": "Are ownership, outcome, reason, and grouped membership easy to understand?"
+    }
+  ],
+  "review": {
+    "feedback_file": "review-feedback.json",
+    "exported": "2026-11-14T04:15:20.448Z",
+    "decisions": [
+      "Keep all seven screen directions",
+      "Center modals horizontally and vertically",
+      "Compact extremes are secondary; define a below-minimum warning",
+      "Approve stronger dimming with full-contrast opaque modal; calculate exact centering in code"
+    ],
+    "draft_policy": [
+      "Retain existing 60 × 18 minimum unless explicitly revised",
+      "Prioritize 120 × 32 working layout",
+      "Recenter on resize without resetting interaction state"
+    ]
+  },
+  "milestone": "https://github.com/cliffom/bambustand/milestone/19",
+  "issues": [
+    190,
+    191,
+    192,
+    193,
+    194,
+    195
+  ]
+}

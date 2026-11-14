@@ -32,6 +32,14 @@ Open issue states and milestone assignments were checked on 2026-11-12 against t
 
 Live validation in #23 and #38 remains deferred behind usability work, as recorded in those issues. Milestone assignment does not establish successful validation or authorize printer control, remote binding, or an installed background service. Earlier version milestones retain historical release context. Detailed outstanding checks are maintained only in the [validation record](development/validation.md#remaining-live-checks).
 
+## TUI UI/UX refresh
+
+[Milestone 19](https://github.com/cliffom/bambustand/milestone/19) captures the reviewed visual direction for future implementation; its six open issue assignments were checked on 2026-11-14 (UTC). It does not change the existing notification-reliability priority or commit a release version/date. The [design review](development/design/tui-refresh-review/index.html) retains seven screen concepts, user feedback, compact studies, and the approved stronger-dimming variant.
+
+Begin with [#190](https://github.com/cliffom/bambustand/issues/190): shared rounded frames and opaque modals centered on both axes over a substantially dimmed dashboard, preserving input/selection/scroll on resize. Continue with [#191 dashboard](https://github.com/cliffom/bambustand/issues/191), [#192 Config](https://github.com/cliffom/bambustand/issues/192), [#193 Action needed / Filament](https://github.com/cliffom/bambustand/issues/193), and [#194 status/activity and remaining dialogs](https://github.com/cliffom/bambustand/issues/194). [#195](https://github.com/cliffom/bambustand/issues/195) separately assesses experimental cell-edge borders; adoption is optional and conventional terminals remain usable.
+
+Completion requires consistent modal/focus/return behavior, theme-aware dimming with full-contrast active content, preserved read-only telemetry and notice/delivery semantics, applicable interaction/layout checks, and current help/guidance/actual captures. Prioritize normal working sizes; retain the existing 60 × 18 minimum and below-minimum warning unless explicitly revised. Generated mockup positions are approximate; implementation must calculate centering against the full viewport.
+
 ## Scope and validation
 
 Printer control, job submission, LAN monitoring, camera feeds, authenticated remote access and an installed background service are outside current implemented scope. Read-only LAN monitoring was [closed as not planned (#12)](https://github.com/cliffom/bambustand/issues/12). Remote access and foreground native notifications remain design proposals in the milestones above. Existing AMS/filament inspection is delivered; this roadmap makes no commitment to additional inventory management.
