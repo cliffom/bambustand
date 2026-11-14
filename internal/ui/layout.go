@@ -1,8 +1,27 @@
 package ui
 
+import "github.com/charmbracelet/x/ansi"
+
 // tableColumns describes widths shared by the header and every printer row.
 type tableColumns struct {
 	name, link, state, progress, remaining, finish, notices int
+}
+
+// Summary columns reserve two-digit counts so ordinary telemetry does not move
+// labels. Larger counts expand rather than truncate. Compact notices may span
+// the otherwise unused fourth column on the second row.
+func overviewColumnWidths(width int, state [4]string, attention [3]string, compact bool) [3]int {
+	columns := [3]int{12, 14, 26}
+	if compact {
+		columns = [3]int{8, 10, 0}
+	}
+	for i := range columns {
+		columns[i] = max(columns[i], ansi.StringWidth(state[i]), ansi.StringWidth(attention[i]))
+	}
+	if compact {
+		columns[2] = max(ansi.StringWidth(state[2]), min(columns[2], width-columns[0]-columns[1]-9-max(12, ansi.StringWidth(state[3]))))
+	}
+	return columns
 }
 
 // activityColumnWidths reserves the complete longest outcome at every supported

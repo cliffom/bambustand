@@ -233,16 +233,32 @@ func (m Model) printerListStatus() string {
 // overviewLines counts all printers independently of filtering; state counts are last reported.
 func (m Model) overviewLines() []string {
 	v := m.overview
-	state := fmt.Sprintf("%d printers · %d printing · %d paused/failed · %d idle/done", len(m.Farm.Printers), v.printing, v.stopped, v.idle)
-	attention := fmt.Sprintf("%d attention · %d unavailable · %d notices (%d unreviewed)", v.attention, v.unavailable, m.Farm.NoticeCount(), m.Farm.Unacknowledged())
-	if ansi.StringWidth(state) > m.width {
-		state = fmt.Sprintf("%d total · %d print · %d stopped · %d idle/done", len(m.Farm.Printers), v.printing, v.stopped, v.idle)
+	notices, unreviewed := m.Farm.NoticeCount(), m.Farm.Unacknowledged()
+	policy := m.alertSummary()
+	format := func(compact bool) (string, string) {
+		state := [4]string{fmt.Sprintf("%d printers", len(m.Farm.Printers)), fmt.Sprintf("%d printing", v.printing), fmt.Sprintf("%d paused/failed", v.stopped), fmt.Sprintf("%d idle/done", v.idle)}
+		attention := [3]string{fmt.Sprintf("%d attention", v.attention), fmt.Sprintf("%d unavailable", v.unavailable), fmt.Sprintf("%d notices (%d unreviewed)", notices, unreviewed)}
+		if compact {
+			state[0], state[1], state[2] = fmt.Sprintf("%d total", len(m.Farm.Printers)), fmt.Sprintf("%d print", v.printing), fmt.Sprintf("%d stopped", v.stopped)
+			attention[0], attention[1], attention[2] = fmt.Sprintf("%d attn", v.attention), fmt.Sprintf("%d unavail", v.unavailable), fmt.Sprintf("%d notices (%d unrev)", notices, unreviewed)
+		}
+		columns := overviewColumnWidths(m.width, state, attention, compact)
+		pad := func(text string, width int) string {
+			return text + strings.Repeat(" ", max(0, width-ansi.StringWidth(text)))
+		}
+		top := pad(state[0], columns[0]) + " · " + pad(state[1], columns[1]) + " · " + pad(state[2], columns[2]) + " · " + state[3]
+		bottom := pad(attention[0], columns[0]) + " · " + pad(attention[1], columns[1]) + " · " + attention[2]
+		if policy != "" && ansi.StringWidth(attention[2]) <= columns[2] {
+			withPolicy := pad(attention[0], columns[0]) + " · " + pad(attention[1], columns[1]) + " · " + pad(attention[2], columns[2]) + policy
+			if ansi.StringWidth(withPolicy) <= m.width {
+				bottom = withPolicy
+			}
+		}
+		return top, bottom
 	}
-	if ansi.StringWidth(attention) > m.width {
-		attention = fmt.Sprintf("%d attn · %d unavail · %d notices (%d unrev)", v.attention, v.unavailable, m.Farm.NoticeCount(), m.Farm.Unacknowledged())
-	}
-	if policy := m.alertSummary(); ansi.StringWidth(attention+policy) <= m.width {
-		attention += policy
+	state, attention := format(false)
+	if ansi.StringWidth(state) > m.width || ansi.StringWidth(attention) > m.width {
+		state, attention = format(true)
 	}
 	return []string{m.styles.secondary.Render(state), m.styles.secondary.Render(attention)}
 }

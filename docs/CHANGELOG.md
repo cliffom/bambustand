@@ -4,7 +4,7 @@ Release changes and upgrade notes are recorded below. Names and scope describe e
 
 ## 0.12.0 — Terminal UI refresh
 
-- Notification activity aligns time, printer, subject and outcome columns, including long names and compact terminals.
+- Notification activity aligns time, printer, subject and outcome columns, including long names and compact terminals. The two farm-summary rows also use aligned columns beneath the unchanged title row.
 
 - Rounded dashboard panels, shared Details/Notices boundaries, explicit focus outlines and dotted detail grouping make the farm easier to scan.
 - Config, Action needed, AMS / Filament, Status / Feedback, notification activity and the remaining inspectors use centered opaque frames over a substantially dimmed dashboard. Frames recenter on resize while preserving the active dialog, input, selection and reading position; controls remain in the active frame.

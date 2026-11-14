@@ -12,6 +12,8 @@ Printer details also show a **Print outcome** for paused/stopped, canceled and e
 
 Rounded panels group printers, details and notices. The focused panel has an accent outline; the selected printer retains its row highlight. Details and notices share a divider at 105 columns and above and stack below it. Inspection dialogs open centered over the dimmed farm and retain your place through resize.
 
+The two summary rows beneath the app/version/connection heading use aligned columns. Counts describe the same whole farm; compact terminals shorten labels and show snoozed/muted totals only when there is room.
+
 ## Summary definitions
 
 | Count | Meaning |
